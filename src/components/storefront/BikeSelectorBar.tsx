@@ -9,7 +9,7 @@ import {
 } from '../../lib/motorcycles';
 
 interface Props {
-  /** Versión compacta (solo ícono) para pantallas móviles. */
+  /** Versión circular de filtro (botón lima junto al buscador). */
   compact?: boolean;
 }
 
@@ -74,38 +74,80 @@ export default function BikeSelectorBar({ compact = false }: Props) {
 
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-label={shownBike ? `Mi moto: ${bikeLabel(shownBike)}` : 'Seleccionar mi moto'}
-        className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-          shownBike
-            ? 'border-stock-ok/40 bg-stock-ok/10 text-carbon-900'
-            : 'border-acero-300 text-carbon-900 hover:border-carbon-900'
-        }`}
-      >
-        <svg
-          className="h-5 w-5 text-competicion-600"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
+      {compact ? (
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-label={shownBike ? `Filtrar por mi moto: ${bikeLabel(shownBike)}` : 'Filtrar por modelo de moto'}
+          className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-lime-500 text-carbon-950 shadow-xs transition-transform active:scale-95 hover:bg-lime-400"
         >
-          <circle cx="5.5" cy="17.5" r="3.5" />
-          <circle cx="18.5" cy="17.5" r="3.5" />
-          <path d="M9 17.5h4l3-7h-3l-2-3H8l1 3H6" />
-        </svg>
-        {!compact && <span>{shownBike ? bikeLabel(shownBike) : 'Mi Moto'}</span>}
-        {compact && shownBike && <span className="h-2 w-2 rounded-full bg-stock-ok" aria-hidden="true" />}
-      </button>
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <line x1="4" y1="21" x2="4" y2="14" />
+            <line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" />
+            <line x1="20" y1="12" x2="20" y2="3" />
+            <circle cx="4" cy="12" r="2" />
+            <circle cx="12" cy="10" r="2" />
+            <circle cx="20" cy="14" r="2" />
+          </svg>
+          {shownBike && (
+            <span
+              className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-carbon-950"
+              aria-hidden="true"
+            />
+          )}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-label={shownBike ? `Mi moto: ${bikeLabel(shownBike)}` : 'Seleccionar mi moto'}
+          className={`inline-flex min-h-11 shrink-0 items-center gap-2.5 rounded-full border py-1.5 pl-1.5 pr-3.5 text-sm font-semibold transition-all ${
+            shownBike
+              ? 'border-lime-500/60 bg-lime-500/15 text-carbon-900'
+              : 'border-acero-200 bg-white text-carbon-900 shadow-2xs hover:bg-surface-muted'
+          }`}
+        >
+          <span
+            className={`grid h-8 w-8 place-items-center rounded-full text-sm ${
+              shownBike ? 'bg-lime-500 text-carbon-950' : 'bg-surface-muted text-carbon-900'
+            }`}
+            aria-hidden="true"
+          >
+            🏍️
+          </span>
+          <span className="max-w-[11rem] truncate">
+            {shownBike ? bikeLabel(shownBike) : 'Mi Moto'}
+          </span>
+          <svg
+            className={`h-4 w-4 text-acero-500 transition-transform ${open ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+      )}
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-acero-200 bg-white p-4 text-left shadow-xl">
-          <p className="text-sm font-bold text-carbon-900">¿Qué moto tienes?</p>
-          <p className="mt-0.5 text-xs text-acero-500">Mostramos los repuestos compatibles con tu moto.</p>
+        <div className="absolute right-0 z-50 mt-2.5 w-80 rounded-3xl border border-acero-200 bg-white p-5 text-left shadow-2xl">
+          <div className="flex items-center justify-between">
+            <p className="text-base font-extrabold text-carbon-900">¿Qué moto tienes?</p>
+            <span className="rounded-full bg-lime-500/20 px-2.5 py-0.5 text-[11px] font-bold text-carbon-900">
+              Filtro exacto
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-acero-500">
+            Te mostraremos los repuestos compatibles y universales para tu moto.
+          </p>
 
-          <div className="mt-3 space-y-3">
+          <div className="mt-4 space-y-3">
             <label className="block text-xs font-semibold text-acero-600">
               Marca
               <select
@@ -115,7 +157,7 @@ export default function BikeSelectorBar({ compact = false }: Props) {
                   setModel('');
                   setYear('');
                 }}
-                className="mt-1 w-full rounded-lg border border-acero-300 bg-white px-3 py-2 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500"
+                className="mt-1 w-full rounded-2xl border border-transparent bg-surface-muted px-3.5 py-2.5 text-sm font-medium text-carbon-900 outline-none focus:border-carbon-900 focus:bg-white"
               >
                 <option value="">Elige una marca…</option>
                 {catalog.map((entry) => (
@@ -135,9 +177,9 @@ export default function BikeSelectorBar({ compact = false }: Props) {
                   setModel(event.target.value);
                   setYear('');
                 }}
-                className="mt-1 w-full rounded-lg border border-acero-300 bg-white px-3 py-2 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 disabled:bg-acero-200/50 disabled:text-acero-500"
+                className="mt-1 w-full rounded-2xl border border-transparent bg-surface-muted px-3.5 py-2.5 text-sm font-medium text-carbon-900 outline-none focus:border-carbon-900 focus:bg-white disabled:opacity-50"
               >
-                <option value="">{brand ? 'Elige un modelo…' : 'Primero la marca'}</option>
+                <option value="">{brand ? 'Elige un modelo…' : 'Primero elige la marca'}</option>
                 {models.map((entry) => (
                   <option key={entry.model} value={entry.model}>
                     {entry.model}
@@ -152,34 +194,33 @@ export default function BikeSelectorBar({ compact = false }: Props) {
                 value={year}
                 disabled={!model}
                 onChange={(event) => setYear(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-acero-300 bg-white px-3 py-2 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 disabled:bg-acero-200/50 disabled:text-acero-500"
+                className="mt-1 w-full rounded-2xl border border-transparent bg-surface-muted px-3.5 py-2.5 text-sm font-medium text-carbon-900 outline-none focus:border-carbon-900 focus:bg-white disabled:opacity-50"
               >
                 <option value="">Todos los años</option>
-                {years.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
+                {years.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
                   </option>
                 ))}
               </select>
             </label>
-          </div>
 
-          <div className="mt-4 flex items-center gap-2">
             <button
               type="button"
               onClick={apply}
               disabled={!brand || !model}
-              className="flex-1 rounded-lg bg-competicion-500 px-3 py-2.5 text-sm font-bold text-white hover:bg-competicion-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-full bg-lime-500 px-4 py-3 text-sm font-extrabold text-carbon-950 transition-colors hover:bg-lime-400 disabled:opacity-40"
             >
               Ver repuestos compatibles
             </button>
+
             {shownBike && (
               <button
                 type="button"
                 onClick={remove}
-                className="rounded-lg border border-acero-300 px-3 py-2.5 text-sm font-semibold text-acero-600 hover:border-carbon-900"
+                className="w-full rounded-full border border-acero-300 px-3 py-2 text-xs font-semibold text-acero-600 hover:border-carbon-900 hover:text-carbon-900"
               >
-                Quitar
+                Quitar filtro ({bikeLabel(shownBike)})
               </button>
             )}
           </div>

@@ -30,43 +30,113 @@ function pageUrl(page: number): string {
   next.set('page', String(page));
   return `/catalogo?${next.toString()}`;
 }
+
+function pillUrl(patch: { category?: string; line?: string }): string {
+  const next = new URLSearchParams(params);
+  next.delete('page');
+  if (patch.category === undefined && patch.line === undefined) {
+    next.delete('category');
+    next.delete('line');
+  } else if (patch.line !== undefined) {
+    next.set('line', patch.line);
+    next.delete('category');
+  } else if (patch.category !== undefined) {
+    next.set('category', patch.category);
+    next.delete('line');
+  }
+  const qs = next.toString();
+  return qs ? `/catalogo?${qs}` : '/catalogo';
+}
+
+const isAllActive = !filters.category && !filters.line;
 ---
 
 <PublicLayout
   title={`${lineLabel ? `${lineLabel} · ` : ''}Catálogo de Repuestos | Envío a todo Chile`}
   description="Catálogo de repuestos y accesorios para motos Enduro y Honda XR. Filtra por modelo de moto, categoría y stock. Despacho el mismo día."
 >
-  <div class="mx-auto max-w-7xl px-4 py-6">
-    <nav aria-label="Ruta de navegación" class="text-xs text-acero-500">
-      <a href="/" class="hover:text-carbon-900">Inicio</a>
-      <span class="mx-1">/</span>
-      <span class="text-carbon-900">Catálogo</span>
-      {lineLabel && <><span class="mx-1">/</span><span class="text-carbon-900">{lineLabel}</span></>}
+  <div class="mx-auto max-w-7xl px-4 py-4">
+    <!-- Píldoras horizontales de categorías (estilo pantalla derecha de la imagen de referencia) -->
+    <nav aria-label="Categorías del catálogo">
+      <ul class="no-scrollbar flex items-center gap-2.5 overflow-x-auto py-1">
+        <li class="shrink-0">
+          <a
+            href={pillUrl({})}
+            class:list={[
+              'inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm transition-all',
+              isAllActive
+                ? 'bg-carbon-900 font-bold text-white shadow-xs'
+                : 'bg-surface-muted font-medium text-carbon-800 hover:bg-surface-hover',
+            ]}
+          >
+            {isAllActive && <span class="text-lime-500" aria-hidden="true">✦</span>}
+            Todos
+          </a>
+        </li>
+
+        <li class="shrink-0">
+          <a
+            href={pillUrl({ line: 'XR_CLASSIC' })}
+            class:list={[
+              'inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm transition-all',
+              filters.line === 'XR_CLASSIC'
+                ? 'bg-carbon-900 font-bold text-white shadow-xs'
+                : 'bg-surface-muted font-medium text-carbon-800 hover:bg-surface-hover',
+            ]}
+          >
+            {filters.line === 'XR_CLASSIC' && <span class="text-lime-500" aria-hidden="true">✦</span>}
+            Línea XR
+          </a>
+        </li>
+
+        <li class="shrink-0">
+          <a
+            href={pillUrl({ line: 'ENDURO' })}
+            class:list={[
+              'inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm transition-all',
+              filters.line === 'ENDURO'
+                ? 'bg-carbon-900 font-bold text-white shadow-xs'
+                : 'bg-surface-muted font-medium text-carbon-800 hover:bg-surface-hover',
+            ]}
+          >
+            {filters.line === 'ENDURO' && <span class="text-lime-500" aria-hidden="true">✦</span>}
+            Enduro
+          </a>
+        </li>
+
+        {
+          CATEGORIES.map((category) => {
+            const active = filters.category === category.slug;
+            return (
+              <li class="shrink-0">
+                <a
+                  href={pillUrl({ category: category.slug })}
+                  class:list={[
+                    'inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm transition-all',
+                    active
+                      ? 'bg-carbon-900 font-bold text-white shadow-xs'
+                      : 'bg-surface-muted font-medium text-carbon-800 hover:bg-surface-hover',
+                  ]}
+                >
+                  {active && <span class="text-lime-500" aria-hidden="true">✦</span>}
+                  {category.name}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
     </nav>
 
-    <div class="mt-2 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-extrabold tracking-tight lg:text-3xl">{lineLabel ?? 'Catálogo de repuestos'}</h1>
-        <p class="mt-1 text-sm text-acero-500">
-          {result.total} {result.total === 1 ? 'repuesto encontrado' : 'repuestos encontrados'} · Despacho el mismo día
-        </p>
-      </div>
-      {hasFilters && (
-        <a href="/catalogo" class="text-sm font-semibold text-competicion-600 hover:underline">
-          Limpiar filtros
-        </a>
-      )}
-    </div>
-
-    <!-- Filtros combinables (funcionan sin JavaScript) -->
+    <!-- Filtros combinables por moto, búsqueda y orden (Soft UI) -->
     <form
       action="/catalogo"
       method="get"
-      class="mt-5 rounded-xl border border-acero-200 bg-acero-200/30 p-3 sm:p-4"
+      class="mt-4 rounded-3xl bg-surface-muted p-4 sm:p-5"
     >
       {filters.line && <input type="hidden" name="line" value={filters.line} />}
 
-      <div class="grid grid-cols-2 gap-2.5 lg:grid-cols-12">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-12">
         <label class="col-span-2 block text-xs font-semibold text-acero-600 lg:col-span-4">
           Buscar por nombre, SKU o N° de parte
           <input
@@ -74,7 +144,7 @@ function pageUrl(page: number): string {
             name="q"
             value={filters.q ?? ''}
             placeholder="Ej. pistón XR 250 o 13101-KCE-670"
-            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-3 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
+            class="mt-1.5 w-full rounded-2xl border border-transparent bg-white px-3.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-carbon-900/20 focus:ring-2 focus:ring-lime-500/40"
           />
         </label>
 
@@ -82,7 +152,7 @@ function pageUrl(page: number): string {
           Categoría
           <select
             name="category"
-            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500"
+            class="mt-1.5 w-full rounded-2xl border border-transparent bg-white px-3 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-carbon-900/20"
           >
             <option value="">Todas</option>
             {
@@ -100,7 +170,7 @@ function pageUrl(page: number): string {
           <select
             name="brand"
             onchange="this.form.requestSubmit()"
-            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500"
+            class="mt-1.5 w-full rounded-2xl border border-transparent bg-white px-3 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-carbon-900/20"
           >
             <option value="">Todas</option>
             {
@@ -119,7 +189,7 @@ function pageUrl(page: number): string {
             name="model"
             onchange="this.form.requestSubmit()"
             disabled={!filters.brand}
-            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 disabled:bg-acero-200/50 disabled:text-acero-500"
+            class="mt-1.5 w-full rounded-2xl border border-transparent bg-white px-3 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-carbon-900/20 disabled:opacity-50"
           >
             <option value="">{filters.brand ? 'Todos' : 'Elige marca'}</option>
             {
@@ -137,7 +207,7 @@ function pageUrl(page: number): string {
           <select
             name="year"
             disabled={!filters.model}
-            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 disabled:bg-acero-200/50 disabled:text-acero-500"
+            class="mt-1.5 w-full rounded-2xl border border-transparent bg-white px-3 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-carbon-900/20 disabled:opacity-50"
           >
             <option value="">Todos</option>
             {
@@ -154,7 +224,7 @@ function pageUrl(page: number): string {
           Ordenar por
           <select
             name="sort"
-            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500"
+            class="mt-1.5 w-full rounded-2xl border border-transparent bg-white px-3 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-carbon-900/20"
           >
             {
               SORT_OPTIONS.map((option) => (
@@ -166,53 +236,69 @@ function pageUrl(page: number): string {
           </select>
         </label>
 
-        <div class="col-span-2 flex flex-col justify-end gap-2.5 lg:col-span-9">
-          <label class="flex items-center gap-2 text-sm font-medium text-carbon-900">
+        <div class="col-span-1 flex items-end pb-1 lg:col-span-6">
+          <label class="flex items-center gap-2 text-sm font-semibold text-carbon-900">
             <input
               type="checkbox"
               name="inStock"
               value="1"
               checked={filters.inStockOnly}
-              class="h-5 w-5 rounded border-acero-300 text-competicion-500 focus:ring-competicion-500"
+              class="h-5 w-5 rounded border-acero-300 accent-carbon-900"
             />
-            Mostrar solo repuestos con stock
+            Solo en stock
           </label>
         </div>
 
-        <button
-          type="submit"
-          class="col-span-2 w-full rounded-lg bg-carbon-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-carbon-800 lg:col-span-3 lg:w-auto"
-        >
-          Aplicar filtros
-        </button>
+        <div class="col-span-2 flex items-end lg:col-span-3">
+          <button
+            type="submit"
+            class="w-full rounded-full bg-lime-500 px-5 py-2.5 text-sm font-extrabold text-carbon-950 transition-colors hover:bg-lime-400"
+          >
+            Aplicar filtros
+          </button>
+        </div>
       </div>
     </form>
 
-    {result.source === 'fallback' && import.meta.env.DEV && (
-      <p class="mt-3 rounded-lg bg-acero-200/60 px-3 py-2 text-xs text-acero-600">
-        Modo desarrollo: el backend no respondió, se muestra el catálogo local de ejemplo.
-      </p>
-    )}
+    <!-- Cabecera de resultados estilo "Special For You / See All" -->
+    <div class="mt-6 flex items-center justify-between gap-3">
+      <div>
+        <h1 class="text-lg font-extrabold tracking-tight text-carbon-950 sm:text-2xl">
+          {lineLabel ?? 'Especial para tu Moto'}
+        </h1>
+        <p class="mt-0.5 text-xs text-acero-500">
+          {result.total} {result.total === 1 ? 'repuesto disponible' : 'repuestos disponibles'}
+        </p>
+      </div>
+      {hasFilters && (
+        <a
+          href="/catalogo"
+          class="rounded-full bg-surface-muted px-4 py-1.5 text-xs font-bold text-carbon-900 hover:bg-surface-hover"
+        >
+          Ver todos
+        </a>
+      )}
+    </div>
 
     {
       result.items.length > 0 ? (
-        <ul class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 pb-4 sm:gap-x-5 sm:gap-y-8 md:grid-cols-3 lg:grid-cols-4">
           {result.items.map((product) => (
             <li>
-              <ProductCard product={product} />
+              <ProductCard product={product} staggered />
             </li>
           ))}
         </ul>
       ) : (
-        <div class="mt-8 rounded-xl border border-dashed border-acero-300 p-10 text-center">
+        <div class="mt-8 rounded-3xl bg-surface-muted p-10 text-center">
           <p class="text-3xl">🔎</p>
-          <p class="mt-2 font-bold">No encontramos repuestos con esos filtros</p>
+          <p class="mt-2 font-extrabold text-carbon-950">No encontramos repuestos con esos filtros</p>
           <p class="mt-1 text-sm text-acero-500">
-            Prueba con otra moto o revisa el catálogo completo.
+            Prueba con otra moto o explora el catálogo completo.
           </p>
           <a
             href="/catalogo"
-            class="mt-4 inline-block rounded-lg bg-competicion-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-competicion-600"
+            class="mt-5 inline-block rounded-full bg-lime-500 px-6 py-3 text-sm font-extrabold text-carbon-950 hover:bg-lime-400"
           >
             Ver todo el catálogo
           </a>
@@ -222,19 +308,25 @@ function pageUrl(page: number): string {
 
     {
       result.totalPages > 1 && (
-        <nav aria-label="Paginación" class="mt-8 flex items-center justify-between gap-3 text-sm">
+        <nav aria-label="Paginación" class="mt-10 flex items-center justify-between gap-3 text-sm">
           {result.page > 1 ? (
-            <a href={pageUrl(result.page - 1)} class="rounded-lg border border-acero-300 px-4 py-2 font-semibold hover:border-carbon-900">
+            <a
+              href={pageUrl(result.page - 1)}
+              class="rounded-full bg-surface-muted px-5 py-2.5 font-bold text-carbon-900 hover:bg-surface-hover"
+            >
               ← Anterior
             </a>
           ) : (
             <span />
           )}
-          <span class="text-acero-500">
+          <span class="rounded-full bg-surface-muted px-4 py-1.5 text-xs font-semibold text-acero-600">
             Página {result.page} de {result.totalPages}
           </span>
           {result.page < result.totalPages ? (
-            <a href={pageUrl(result.page + 1)} class="rounded-lg border border-acero-300 px-4 py-2 font-semibold hover:border-carbon-900">
+            <a
+              href={pageUrl(result.page + 1)}
+              class="rounded-full bg-carbon-900 px-5 py-2.5 font-bold text-white hover:bg-carbon-800"
+            >
               Siguiente →
             </a>
           ) : (

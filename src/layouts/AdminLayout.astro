@@ -12,6 +12,7 @@ interface Props {
 const { title, subtitle } = Astro.props;
 
 const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
+const logoUrl = 'https://res.cloudinary.com/do6bpao6a/image/upload/v1792446600/no_bg_ktqqew.webp';
 const path = Astro.url.pathname;
 
 const navItems = [
@@ -37,21 +38,28 @@ const isActive = (href: string) => (href === '/admin' ? path === '/admin' : path
   <body class="min-h-screen bg-acero-200 text-carbon-900 antialiased">
     <div class="lg:grid lg:min-h-screen lg:grid-cols-[16rem_1fr]">
       <!-- Menú lateral (escritorio) / barra superior (móvil) -->
-      <aside class="bg-carbon-900 text-acero-200">
+      <aside class="bg-carbon-950 text-acero-200">
         <div class="flex items-center justify-between px-4 py-3 lg:py-5">
-          <a href="/admin" class="flex items-center gap-2">
-            <span class="grid h-8 w-8 place-items-center rounded-lg bg-competicion-500 text-sm">🏍️</span>
+          <a href="/admin" class="flex items-center gap-2.5">
+            <img
+              src={logoUrl}
+              alt={`Logo ${storeName}`}
+              width="36"
+              height="36"
+              decoding="async"
+              class="h-9 w-9 shrink-0 rounded-lg bg-white/95 p-0.5 object-contain"
+            />
             <span class="font-extrabold text-white">Panel {storeName}</span>
           </a>
           <a
             href="/"
-            class="rounded border border-white/20 px-2 py-1 text-xs hover:bg-white/10 lg:hidden"
+            class="rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-white/10 lg:hidden"
             >Ver tienda</a
           >
         </div>
 
         <nav aria-label="Secciones del panel" class="px-2 pb-2">
-          <ul class="flex gap-1 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible lg:px-2">
+          <ul class="flex gap-1.5 overflow-x-auto lg:flex-col lg:gap-1.5 lg:overflow-visible lg:px-2">
             {
               navItems.map((item) => (
                 <li class="shrink-0 lg:w-full">
@@ -59,9 +67,9 @@ const isActive = (href: string) => (href === '/admin' ? path === '/admin' : path
                     href={item.href}
                     aria-current={isActive(item.href) ? 'page' : undefined}
                     class:list={[
-                      'flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-base font-semibold transition-colors lg:text-[15px]',
+                      'flex items-center gap-3 whitespace-nowrap rounded-full px-4 py-2.5 text-base font-semibold transition-colors lg:text-[15px]',
                       isActive(item.href)
-                        ? 'bg-competicion-500 text-white'
+                        ? 'bg-lime-500 text-carbon-950'
                         : 'text-acero-200 hover:bg-white/10 hover:text-white',
                     ]}
                   >

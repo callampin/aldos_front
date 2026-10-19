@@ -25,23 +25,34 @@ const {
 } = Astro.props;
 
 const siteUrl = Astro.site ?? Astro.url;
-const canonicalUrl = canonical ? new URL(canonical, siteUrl).toString() : new URL(Astro.url.pathname, siteUrl).toString();
+const canonicalUrl = canonical
+  ? new URL(canonical, siteUrl).toString()
+  : new URL(Astro.url.pathname, siteUrl).toString();
 const ogImageUrl = new URL(ogImage ?? '/og-image.png', siteUrl).toString();
 
 const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
-const storeEmail = import.meta.env.PUBLIC_STORE_EMAIL || 'contacto@dominio.cl';
+const storeEmail = import.meta.env.PUBLIC_STORE_EMAIL || 'contacto@aldosmotos.cl';
+const logoUrl = 'https://res.cloudinary.com/do6bpao6a/image/upload/v1792446600/no_bg_ktqqew.webp';
 const whatsappLink = buildWhatsAppLink(
   undefined,
   'Hola, tengo una consulta sobre un repuesto para mi moto.',
 );
 
+const pathname = Astro.url.pathname;
+
 const navLinks = [
+  { href: '/', label: 'Inicio' },
   { href: '/catalogo', label: 'Catálogo' },
   { href: '/catalogo?line=XR_CLASSIC', label: 'Línea XR' },
   { href: '/catalogo?line=ENDURO', label: 'Enduro' },
   { href: '/seguimiento', label: 'Mi pedido' },
   { href: '/nosotros', label: 'Nosotros' },
 ];
+
+const isHome = pathname === '/';
+const isCatalog = pathname.startsWith('/catalogo') || pathname.startsWith('/producto');
+const isTracking = pathname.startsWith('/seguimiento') || pathname.startsWith('/checkout');
+const isAbout = pathname.startsWith('/nosotros') || pathname.startsWith('/politicas');
 
 const year = new Date().getFullYear();
 ---
@@ -75,102 +86,131 @@ const year = new Date().getFullYear();
 
     <slot name="head" />
   </head>
-  <body class="flex min-h-screen flex-col bg-white text-carbon-900 antialiased">
+  <body class="flex min-h-screen flex-col bg-white pb-20 text-carbon-900 antialiased md:pb-0">
     <a
       href="#contenido"
-      class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-carbon-900 focus:px-3 focus:py-2 focus:text-white"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-full focus:bg-carbon-900 focus:px-4 focus:py-2 focus:text-white"
       >Saltar al contenido</a
     >
 
     <!-- Barra superior de confianza -->
     <div class="bg-carbon-950 text-acero-200">
       <div
-        class="mx-auto flex max-w-7xl flex-col items-center gap-0.5 px-4 py-1.5 text-center text-xs sm:flex-row sm:justify-between sm:text-left"
+        class="mx-auto flex max-w-7xl flex-col items-center gap-0.5 px-4 py-1.5 text-center text-[11px] sm:flex-row sm:justify-between sm:text-left sm:text-xs"
       >
-        <p class="font-medium">🚚 Despacho el mismo día de Arica a Punta Arenas e Isla de Pascua</p>
+        <p class="font-medium">
+          <span class="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-lime-500"></span>
+          Despacho el mismo día de Arica a Punta Arenas e Isla de Pascua
+        </p>
         <a class="underline-offset-2 hover:text-white hover:underline" href={`mailto:${storeEmail}`}>
-          ✉️ {storeEmail}
+          {storeEmail}
         </a>
       </div>
     </div>
 
-    <!-- Header -->
-    <header class="sticky top-0 z-40 border-b border-acero-200 bg-white/95 backdrop-blur">
-      <div class="mx-auto max-w-7xl px-4">
-        <div class="flex items-center gap-3 py-2.5">
-          <a href="/" class="flex shrink-0 items-center gap-2" aria-label={`${storeName} — Inicio`}>
-            <span class="grid h-9 w-9 place-items-center rounded-lg bg-carbon-900 text-lg">🏍️</span>
-            <span class="text-lg font-extrabold tracking-tight">{storeName}</span>
-          </a>
-
-          <!-- Buscador (desktop) -->
-          <form
-            action="/catalogo"
-            method="get"
-            role="search"
-            class="hidden flex-1 items-center md:flex"
-          >
-            <label class="sr-only" for="q-desktop">Buscar repuesto por nombre, SKU o N° de parte</label>
-            <div class="relative w-full">
-              <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-acero-500">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-              </span>
-              <input
-                id="q-desktop"
-                type="search"
-                name="q"
-                placeholder="Busca por repuesto, SKU o N° de parte…"
-                class="w-full rounded-lg border border-acero-300 bg-acero-200/40 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
+    <!-- Header estilo App Moderna -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md">
+      <div class="mx-auto max-w-7xl px-4 pt-3 pb-2.5">
+        <!-- Fila 1: Píldora de identidad / Mi Moto + Links Desktop + Bolsa de Compras -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <a
+              href="/"
+              class="inline-flex items-center gap-2.5 rounded-full border border-acero-200 bg-white py-1 pl-1.5 pr-4 shadow-2xs transition-colors hover:bg-surface-muted"
+              aria-label={`${storeName} — Inicio`}
+            >
+              <img
+                src={logoUrl}
+                alt={`Logo ${storeName}`}
+                width="36"
+                height="36"
+                fetchpriority="high"
+                decoding="async"
+                class="h-9 w-9 shrink-0 object-contain"
               />
-            </div>
-          </form>
+              <span class="text-sm font-extrabold tracking-tight text-carbon-900">{storeName}</span>
+            </a>
 
-          <!-- Selector "Mi Moto" (isla React — HU-01) -->
-          <div class="hidden sm:block">
-            <BikeSelectorBar client:idle />
+            <div class="hidden sm:block">
+              <BikeSelectorBar client:idle />
+            </div>
           </div>
 
-          <!-- Carrito (isla React; abre el CartDrawer en la Etapa 3) -->
-          <div class="ml-auto md:ml-0">
+          <!-- Navegación desktop en píldoras -->
+          <nav aria-label="Secciones principales" class="hidden lg:block">
+            <ul class="flex items-center gap-1 rounded-full bg-surface-muted p-1 text-xs font-semibold">
+              {
+                navLinks.map((link) => {
+                  const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
+                  return (
+                    <li>
+                      <a
+                        href={link.href}
+                        class:list={[
+                          'block rounded-full px-3.5 py-2 transition-colors',
+                          active
+                            ? 'bg-carbon-900 text-white'
+                            : 'text-acero-600 hover:text-carbon-900',
+                        ]}
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  );
+                })
+              }
+            </ul>
+          </nav>
+
+          <div class="flex items-center gap-2">
             <CartButton client:load />
           </div>
         </div>
 
-        <!-- Buscador + Mi Moto (móvil) -->
-        <div class="flex items-center gap-2 pb-2.5 md:hidden">
+        <!-- Fila 2: Buscador tipo píldora ("Explore…") + Botón circular de filtro en Verde Lima -->
+        <div class="mt-3 flex items-center gap-2.5">
           <form action="/catalogo" method="get" role="search" class="flex-1">
-            <label class="sr-only" for="q-mobile">Buscar repuesto</label>
-            <input
-              id="q-mobile"
-              type="search"
-              name="q"
-              placeholder="Busca tu repuesto…"
-              class="w-full rounded-lg border border-acero-300 bg-acero-200/40 px-3 py-2.5 text-sm outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
-            />
+            <label class="sr-only" for="q-header">Buscar repuesto por nombre, SKU o código OEM</label>
+            <div class="relative">
+              <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-acero-500">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+              </span>
+              <input
+                id="q-header"
+                type="search"
+                name="q"
+                placeholder="Buscar repuestos, Honda XR, SKU o OEM…"
+                class="w-full rounded-full border border-transparent bg-surface-muted py-3 pl-11 pr-4 text-sm text-carbon-900 placeholder:text-acero-400 outline-none transition-all focus:border-carbon-900/20 focus:bg-white focus:ring-2 focus:ring-lime-500/40"
+              />
+            </div>
           </form>
-          <BikeSelectorBar client:idle compact />
+
+          <!-- Botón circular de filtro (abre selector de moto en móvil o lleva a filtros) -->
+          <div class="sm:hidden">
+            <BikeSelectorBar client:idle compact />
+          </div>
+          <a
+            href="/catalogo"
+            aria-label="Explorar filtros del catálogo"
+            class="hidden h-11 w-11 shrink-0 place-items-center rounded-full bg-lime-500 text-carbon-950 shadow-2xs transition-transform hover:bg-lime-400 active:scale-95 sm:grid"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <line x1="4" y1="21" x2="4" y2="14" />
+              <line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" />
+              <line x1="20" y1="12" x2="20" y2="3" />
+              <circle cx="4" cy="12" r="2" />
+              <circle cx="12" cy="10" r="2" />
+              <circle cx="20" cy="14" r="2" />
+            </svg>
+          </a>
         </div>
       </div>
-
-      <!-- Navegación secundaria -->
-      <nav aria-label="Secciones" class="border-t border-acero-200 bg-white">
-        <ul
-          class="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-1 text-sm font-medium"
-        >
-          {
-            navLinks.map((link) => (
-              <li class="shrink-0">
-                <a
-                  href={link.href}
-                  class="block whitespace-nowrap rounded px-3 py-2 text-acero-600 hover:bg-acero-200/60 hover:text-carbon-900"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </nav>
     </header>
 
     <main id="contenido" class="flex-1">
@@ -179,19 +219,136 @@ const year = new Date().getFullYear();
 
     <CartDrawer client:load />
 
+    <!-- Bottom Navigation Bar estilo App Nativa (Móvil) -->
+    <nav
+      aria-label="Navegación rápida móvil"
+      class="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-acero-200/80 bg-white/95 px-4 py-2.5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden"
+    >
+      <ul class="mx-auto flex max-w-md items-center justify-around">
+        <li>
+          <a
+            href="/"
+            aria-current={isHome ? 'page' : undefined}
+            class:list={[
+              'flex items-center gap-2 rounded-full transition-all',
+              isHome ? 'bg-surface-muted p-1 pr-4 font-bold text-carbon-900' : 'h-11 w-11 justify-center bg-surface-muted text-carbon-800',
+            ]}
+          >
+            <span
+              class:list={[
+                'grid h-9 w-9 place-items-center rounded-full',
+                isHome ? 'bg-lime-500 text-carbon-950' : '',
+              ]}
+            >
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+            </span>
+            {isHome && <span class="text-xs">Inicio</span>}
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="/catalogo"
+            aria-current={isCatalog ? 'page' : undefined}
+            class:list={[
+              'flex items-center gap-2 rounded-full transition-all',
+              isCatalog ? 'bg-surface-muted p-1 pr-4 font-bold text-carbon-900' : 'h-11 w-11 justify-center bg-surface-muted text-carbon-800',
+            ]}
+          >
+            <span
+              class:list={[
+                'grid h-9 w-9 place-items-center rounded-full',
+                isCatalog ? 'bg-lime-500 text-carbon-950' : '',
+              ]}
+            >
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+            </span>
+            {isCatalog && <span class="text-xs">Catálogo</span>}
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="/seguimiento"
+            aria-current={isTracking ? 'page' : undefined}
+            class:list={[
+              'flex items-center gap-2 rounded-full transition-all',
+              isTracking ? 'bg-surface-muted p-1 pr-4 font-bold text-carbon-900' : 'h-11 w-11 justify-center bg-surface-muted text-carbon-800',
+            ]}
+          >
+            <span
+              class:list={[
+                'grid h-9 w-9 place-items-center rounded-full',
+                isTracking ? 'bg-lime-500 text-carbon-950' : '',
+              ]}
+            >
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <path d="m3.3 7 8.7 5 8.7-5" />
+                <path d="M12 22V12" />
+              </svg>
+            </span>
+            {isTracking && <span class="text-xs">Pedido</span>}
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="/nosotros"
+            aria-current={isAbout ? 'page' : undefined}
+            class:list={[
+              'flex items-center gap-2 rounded-full transition-all',
+              isAbout ? 'bg-surface-muted p-1 pr-4 font-bold text-carbon-900' : 'h-11 w-11 justify-center bg-surface-muted text-carbon-800',
+            ]}
+          >
+            <span
+              class:list={[
+                'grid h-9 w-9 place-items-center rounded-full',
+                isAbout ? 'bg-lime-500 text-carbon-950' : '',
+              ]}
+            >
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="5" />
+                <path d="M20 21a8 8 0 0 0-16 0" />
+              </svg>
+            </span>
+            {isAbout && <span class="text-xs">Nosotros</span>}
+          </a>
+        </li>
+      </ul>
+    </nav>
+
     <!-- Footer -->
-    <footer class="mt-12 bg-carbon-900 text-acero-300">
-      <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
+    <footer class="mt-14 rounded-t-3xl bg-carbon-950 text-acero-300">
+      <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p class="text-lg font-extrabold text-white">{storeName}</p>
-          <p class="mt-2 text-sm leading-relaxed">
+          <div class="flex items-center gap-3">
+            <img
+              src={logoUrl}
+              alt={`Logo ${storeName}`}
+              width="40"
+              height="40"
+              loading="lazy"
+              decoding="async"
+              class="h-10 w-10 shrink-0 rounded-xl bg-white/95 p-1 object-contain"
+            />
+            <p class="text-lg font-extrabold text-white">{storeName}</p>
+          </div>
+          <p class="mt-3 text-sm leading-relaxed text-acero-400">
             Repuestos y accesorios para motos Enduro y línea Honda XR. 20 años de experiencia técnica
             y asesoría real por WhatsApp.
           </p>
         </div>
 
         <div>
-          <p class="text-sm font-bold uppercase tracking-wide text-white">Tienda</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-lime-500">Tienda</p>
           <ul class="mt-3 space-y-2 text-sm">
             <li><a class="hover:text-white" href="/catalogo">Catálogo completo</a></li>
             <li><a class="hover:text-white" href="/catalogo?line=XR_CLASSIC">Línea Honda XR</a></li>
@@ -201,7 +358,7 @@ const year = new Date().getFullYear();
         </div>
 
         <div>
-          <p class="text-sm font-bold uppercase tracking-wide text-white">Información</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-lime-500">Información</p>
           <ul class="mt-3 space-y-2 text-sm">
             <li><a class="hover:text-white" href="/nosotros">Quiénes somos</a></li>
             <li>
@@ -210,12 +367,12 @@ const year = new Date().getFullYear();
               >
             </li>
             <li><a class="hover:text-white" href={`mailto:${storeEmail}`}>{storeEmail}</a></li>
-            <li>Despacho el mismo día (pedidos antes del cierre)</li>
+            <li class="text-acero-400">Despacho el mismo día (pedidos antes del cierre)</li>
           </ul>
         </div>
 
         <div>
-          <p class="text-sm font-bold uppercase tracking-wide text-white">Contacto</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-lime-500">Contacto directo</p>
           <ul class="mt-3 space-y-2 text-sm">
             <li>
               <a class="hover:text-white" href={whatsappLink} target="_blank" rel="noopener noreferrer"
@@ -238,7 +395,7 @@ const year = new Date().getFullYear();
 
       <div class="border-t border-white/10">
         <div
-          class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-xs sm:flex-row"
+          class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-acero-400 sm:flex-row"
         >
           <p>© {year} {storeName}. Todos los derechos reservados.</p>
           <p>Envíos de Arica a Punta Arenas, incluida Isla de Pascua 🇨🇱</p>

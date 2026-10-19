@@ -27,15 +27,18 @@ const orgJsonLd = {
     set:html={JSON.stringify(orgJsonLd).replace(/</g, '\\u003c')}
   />
 
-  <section class="bg-carbon-950 text-white">
-    <div class="mx-auto max-w-7xl px-4 py-12 lg:py-16">
-      <h1 class="text-3xl font-extrabold tracking-tight lg:text-4xl">Quiénes somos</h1>
-      <p class="mt-3 max-w-2xl text-acero-300">
+  <div class="mx-auto max-w-7xl px-4 pt-3">
+    <section class="rounded-3xl bg-carbon-950 px-6 py-10 text-white sm:px-10 sm:py-14">
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-lime-400">
+        <span>✦</span> Nuestra Historia
+      </span>
+      <h1 class="mt-3 text-3xl font-extrabold tracking-tight lg:text-4xl">Quiénes somos</h1>
+      <p class="mt-3 max-w-2xl text-sm leading-relaxed text-acero-300">
         Una empresa familiar dedicada a los repuestos para motos, con la experiencia real de taller que
         marca la diferencia: no vendemos solo piezas, te ayudamos a que tu moto quede bien.
       </p>
-    </div>
-  </section>
+    </section>
+  </div>
 
   <div class="mx-auto max-w-3xl px-4 py-10">
     <section class="space-y-4 text-[15px] leading-relaxed text-carbon-900">
@@ -67,19 +70,19 @@ const orgJsonLd = {
       </p>
 
       <div class="grid gap-4 pt-4 sm:grid-cols-3">
-        <div class="rounded-xl border border-acero-200 p-4">
-          <p class="text-2xl">🚚</p>
-          <p class="mt-1 font-bold">Despacho a todo Chile</p>
+        <div class="rounded-3xl bg-surface-muted p-5">
+          <span class="inline-grid h-10 w-10 place-items-center rounded-full bg-lime-500 text-lg text-carbon-950">🚚</span>
+          <p class="mt-3 font-bold">Despacho a todo Chile</p>
           <p class="mt-1 text-sm text-acero-500">De Arica a Punta Arenas e Isla de Pascua.</p>
         </div>
-        <div class="rounded-xl border border-acero-200 p-4">
-          <p class="text-2xl">🔧</p>
-          <p class="mt-1 font-bold">Asesoría técnica real</p>
+        <div class="rounded-3xl bg-surface-muted p-5">
+          <span class="inline-grid h-10 w-10 place-items-center rounded-full bg-lime-500 text-lg text-carbon-950">🔧</span>
+          <p class="mt-3 font-bold">Asesoría técnica real</p>
           <p class="mt-1 text-sm text-acero-500">Confirmamos compatibilidad antes de vender.</p>
         </div>
-        <div class="rounded-xl border border-acero-200 p-4">
-          <p class="text-2xl">💬</p>
-          <p class="mt-1 font-bold">Trato humano</p>
+        <div class="rounded-3xl bg-surface-muted p-5">
+          <span class="inline-grid h-10 w-10 place-items-center rounded-full bg-lime-500 text-lg text-carbon-950">💬</span>
+          <p class="mt-3 font-bold">Trato humano</p>
           <p class="mt-1 text-sm text-acero-500">Por WhatsApp, sin asistentes automáticos.</p>
         </div>
       </div>
@@ -89,19 +92,19 @@ const orgJsonLd = {
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          class="rounded-lg bg-[#25D366] px-5 py-3 text-sm font-bold text-carbon-900 hover:brightness-95"
+          class="rounded-full bg-lime-500 px-6 py-3 text-sm font-extrabold text-carbon-950 hover:bg-lime-400"
         >
           Consultar por WhatsApp
         </a>
         <a
           href="/catalogo"
-          class="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+          class="rounded-full bg-surface-muted px-6 py-3 text-sm font-semibold text-carbon-900 hover:bg-surface-hover"
         >
           Ver catálogo
         </a>
         <a
           href="/politicas-envio-y-devoluciones"
-          class="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+          class="rounded-full bg-surface-muted px-6 py-3 text-sm font-semibold text-carbon-900 hover:bg-surface-hover"
         >
           Políticas de envío y devoluciones
         </a>

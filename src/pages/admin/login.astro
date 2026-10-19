@@ -3,6 +3,7 @@ import '../../styles/global.css';
 import AdminLogin from '../../components/admin/AdminLogin';
 
 const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
+const logoUrl = 'https://res.cloudinary.com/do6bpao6a/image/upload/v1792446600/no_bg_ktqqew.webp';
 ---
 
 <!doctype html>
@@ -17,7 +18,14 @@ const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
   <body class="grid min-h-screen place-items-center bg-carbon-900 p-4 text-carbon-900 antialiased">
     <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
       <div class="text-center">
-        <span class="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-competicion-500 text-2xl">🏍️</span>
+        <img
+          src={logoUrl}
+          alt={`Logo ${storeName}`}
+          width="56"
+          height="56"
+          decoding="async"
+          class="mx-auto h-14 w-14 object-contain"
+        />
         <h1 class="mt-3 text-xl font-extrabold">Panel {storeName}</h1>
         <p class="mt-1 text-sm text-acero-500">Acceso exclusivo de administración</p>
       </div>

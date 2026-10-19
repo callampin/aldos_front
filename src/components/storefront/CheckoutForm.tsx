@@ -65,8 +65,8 @@ export default function CheckoutForm() {
   const total = subtotal + shippingCost;
 
   const inputClass = (hasError: boolean) =>
-    `w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-colors focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30 ${
-      hasError ? 'border-stock-out' : 'border-acero-300'
+    `w-full rounded-2xl border px-3.5 py-2.5 text-sm outline-none transition-all focus:bg-white focus:ring-2 focus:ring-lime-500/40 ${
+      hasError ? 'border-stock-out bg-white' : 'border-transparent bg-white focus:border-carbon-900/20'
     }`;
 
   function validate(): Record<string, string> {
@@ -177,13 +177,13 @@ export default function CheckoutForm() {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-acero-300 p-10 text-center">
-        <p className="text-3xl">🛒</p>
-        <p className="mt-2 font-bold">Tu carrito está vacío</p>
+      <div className="rounded-3xl bg-surface-muted p-10 text-center">
+        <p className="text-3xl">🛍️</p>
+        <p className="mt-2 font-extrabold text-carbon-950">Tu bolsa está vacía</p>
         <p className="mt-1 text-sm text-acero-500">Agrega repuestos para continuar con la compra.</p>
         <a
           href="/catalogo"
-          className="mt-4 inline-block rounded-lg bg-competicion-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-competicion-600"
+          className="mt-4 inline-block rounded-full bg-lime-500 px-6 py-3 text-sm font-extrabold text-carbon-950 hover:bg-lime-400"
         >
           Ver catálogo
         </a>
@@ -195,8 +195,8 @@ export default function CheckoutForm() {
     <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1fr_22rem]">
       <div className="space-y-6">
         {/* Contacto */}
-        <section className="rounded-xl border border-acero-200 p-4 sm:p-5">
-          <h2 className="text-base font-bold">1. Tus datos</h2>
+        <section className="rounded-3xl bg-surface-muted p-5 sm:p-6">
+          <h2 className="text-base font-extrabold text-carbon-950">1. Tus datos</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block text-xs font-semibold text-acero-600 sm:col-span-2">
               Nombre completo *
@@ -238,16 +238,16 @@ export default function CheckoutForm() {
         </section>
 
         {/* Entrega */}
-        <section className="rounded-xl border border-acero-200 p-4 sm:p-5">
-          <h2 className="text-base font-bold">2. Entrega</h2>
+        <section className="rounded-3xl bg-surface-muted p-5 sm:p-6">
+          <h2 className="text-base font-extrabold text-carbon-950">2. Entrega</h2>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm font-medium ${delivery === 'SHIPPING' ? 'border-competicion-500 bg-competicion-500/5' : 'border-acero-300'}`}>
-              <input type="radio" name="delivery" checked={delivery === 'SHIPPING'} onChange={() => setDelivery('SHIPPING')} className="accent-competicion-500" />
+            <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-2xl border p-3.5 text-sm font-semibold transition-all ${delivery === 'SHIPPING' ? 'border-carbon-900 bg-white shadow-2xs' : 'border-transparent bg-white/60'}`}>
+              <input type="radio" name="delivery" checked={delivery === 'SHIPPING'} onChange={() => setDelivery('SHIPPING')} className="accent-carbon-900" />
               Despacho a domicilio
             </label>
             {STORE_CONFIG.pickupEnabled && (
-              <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm font-medium ${delivery === 'PICKUP' ? 'border-competicion-500 bg-competicion-500/5' : 'border-acero-300'}`}>
-                <input type="radio" name="delivery" checked={delivery === 'PICKUP'} onChange={() => setDelivery('PICKUP')} className="accent-competicion-500" />
+              <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-2xl border p-3.5 text-sm font-semibold transition-all ${delivery === 'PICKUP' ? 'border-carbon-900 bg-white shadow-2xs' : 'border-transparent bg-white/60'}`}>
+                <input type="radio" name="delivery" checked={delivery === 'PICKUP'} onChange={() => setDelivery('PICKUP')} className="accent-carbon-900" />
                 Retiro en taller
               </label>
             )}
@@ -310,20 +310,20 @@ export default function CheckoutForm() {
         </section>
 
         {/* Pago */}
-        <section className="rounded-xl border border-acero-200 p-4 sm:p-5">
-          <h2 className="text-base font-bold">3. Medio de pago</h2>
-          <div className="mt-3 space-y-2">
-            <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm ${payment === 'KHIPU' ? 'border-competicion-500 bg-competicion-500/5' : 'border-acero-300'}`}>
-              <input type="radio" name="payment" checked={payment === 'KHIPU'} onChange={() => setPayment('KHIPU')} className="mt-0.5 accent-competicion-500" />
+        <section className="rounded-3xl bg-surface-muted p-5 sm:p-6">
+          <h2 className="text-base font-extrabold text-carbon-950">3. Medio de pago</h2>
+          <div className="mt-3 space-y-2.5">
+            <label className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border p-3.5 text-sm transition-all ${payment === 'KHIPU' ? 'border-carbon-900 bg-white shadow-2xs' : 'border-transparent bg-white/60'}`}>
+              <input type="radio" name="payment" checked={payment === 'KHIPU'} onChange={() => setPayment('KHIPU')} className="mt-0.5 accent-carbon-900" />
               <span>
-                <span className="block font-semibold">Khipu (transferencia automatizada)</span>
+                <span className="block font-bold text-carbon-950">Khipu (transferencia automatizada)</span>
                 <span className="block text-xs text-acero-500">Confirmación del pago en segundos.</span>
               </span>
             </label>
-            <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm ${payment === 'BANK_TRANSFER' ? 'border-competicion-500 bg-competicion-500/5' : 'border-acero-300'}`}>
-              <input type="radio" name="payment" checked={payment === 'BANK_TRANSFER'} onChange={() => setPayment('BANK_TRANSFER')} className="mt-0.5 accent-competicion-500" />
+            <label className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border p-3.5 text-sm transition-all ${payment === 'BANK_TRANSFER' ? 'border-carbon-900 bg-white shadow-2xs' : 'border-transparent bg-white/60'}`}>
+              <input type="radio" name="payment" checked={payment === 'BANK_TRANSFER'} onChange={() => setPayment('BANK_TRANSFER')} className="mt-0.5 accent-carbon-900" />
               <span>
-                <span className="block font-semibold">Transferencia bancaria</span>
+                <span className="block font-bold text-carbon-950">Transferencia bancaria</span>
                 <span className="block text-xs text-acero-500">Te mostramos los datos al confirmar el pedido.</span>
               </span>
             </label>
@@ -332,9 +332,9 @@ export default function CheckoutForm() {
       </div>
 
       {/* Resumen */}
-      <aside className="lg:sticky lg:top-4 lg:h-fit">
-        <div className="rounded-xl border border-acero-200 p-4">
-          <h2 className="text-base font-bold">Resumen del pedido</h2>
+      <aside className="lg:sticky lg:top-20 lg:h-fit">
+        <div className="rounded-3xl bg-surface-muted p-5">
+          <h2 className="text-base font-extrabold text-carbon-950">Resumen del pedido</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {items.map((item) => (
               <li key={item.productId} className="flex justify-between gap-3">
@@ -345,7 +345,7 @@ export default function CheckoutForm() {
               </li>
             ))}
           </ul>
-          <div className="mt-3 space-y-1 border-t border-acero-200 pt-3 text-sm">
+          <div className="mt-3 space-y-1 border-t border-acero-300/70 pt-3 text-sm">
             <div className="flex justify-between">
               <span className="text-acero-500">Subtotal</span>
               <span>{formatCLP(subtotal)}</span>
@@ -360,14 +360,14 @@ export default function CheckoutForm() {
                     : 'Según región'}
               </span>
             </div>
-            <div className="flex justify-between border-t border-acero-200 pt-2 text-base font-extrabold">
+            <div className="flex justify-between border-t border-acero-300/70 pt-2 text-base font-extrabold text-carbon-950">
               <span>Total</span>
               <span>{formatCLP(total)}</span>
             </div>
           </div>
 
           {generalError && (
-            <p className="mt-3 rounded-lg bg-stock-out/10 px-3 py-2 text-sm text-stock-out" role="alert">
+            <p className="mt-3 rounded-2xl bg-stock-out/10 px-3 py-2 text-sm text-stock-out" role="alert">
               {generalError}
             </p>
           )}
@@ -375,7 +375,7 @@ export default function CheckoutForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-4 w-full rounded-lg bg-competicion-500 px-5 py-3.5 text-base font-bold text-white hover:bg-competicion-600 disabled:opacity-60"
+            className="mt-4 w-full rounded-full bg-lime-500 px-5 py-3.5 text-base font-extrabold text-carbon-950 shadow-xs transition-colors hover:bg-lime-400 disabled:opacity-60"
           >
             {submitting ? 'Procesando…' : 'Confirmar pedido'}
           </button>

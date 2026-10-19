@@ -66,7 +66,7 @@ const jsonLd = product
     }
   : null;
 
-const { rates, source: shippingSource } = await getShippingRates();
+const { rates } = await getShippingRates();
 
 const islaDePascuaWhatsApp = buildWhatsAppLink(
   undefined,
@@ -104,20 +104,20 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
         </p>
         <a
           href="/catalogo"
-          class="mt-5 inline-block rounded-lg bg-competicion-500 px-6 py-3 text-sm font-bold text-white hover:bg-competicion-600"
+          class="mt-5 inline-block rounded-full bg-lime-500 px-6 py-3 text-sm font-extrabold text-carbon-950 hover:bg-lime-400"
         >
           Volver al catálogo
         </a>
       </div>
     ) : (
-      <div class="mx-auto max-w-7xl px-4 py-6">
-        <nav aria-label="Ruta de navegación" class="text-xs text-acero-500">
+      <div class="mx-auto max-w-7xl px-4 py-5">
+        <nav aria-label="Ruta de navegación" class="flex flex-wrap items-center gap-1.5 text-xs text-acero-500">
           <a href="/" class="hover:text-carbon-900">Inicio</a>
-          <span class="mx-1">/</span>
+          <span>/</span>
           <a href="/catalogo" class="hover:text-carbon-900">Catálogo</a>
           {product.category && (
             <>
-              <span class="mx-1">/</span>
+              <span>/</span>
               <a
                 href={`/catalogo?category=${product.categorySlug ?? ''}`}
                 class="hover:text-carbon-900"
@@ -126,14 +126,14 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
               </a>
             </>
           )}
-          <span class="mx-1">/</span>
-          <span class="text-carbon-900">{product.name}</span>
+          <span>/</span>
+          <span class="font-medium text-carbon-900">{product.name}</span>
         </nav>
 
-        <div class="mt-4 grid gap-8 lg:grid-cols-2">
-          <!-- Galería -->
+        <div class="mt-5 grid gap-8 lg:grid-cols-2">
+          <!-- Galería en contenedor Soft UI -->
           <div>
-            <div class="overflow-hidden rounded-xl border border-acero-200 bg-acero-200/40">
+            <div class="overflow-hidden rounded-3xl bg-surface-muted">
               {mainImage ? (
                 <img
                   src={mainImage}
@@ -151,7 +151,7 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
               )}
             </div>
             {images.length > 1 && (
-              <ul class="mt-2 grid grid-cols-5 gap-2">
+              <ul class="mt-3 grid grid-cols-5 gap-2.5">
                 {images.map((image) => (
                   <li>
                     <img
@@ -161,7 +161,7 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
                       height="120"
                       loading="lazy"
                       decoding="async"
-                      class="aspect-square w-full rounded-lg border border-acero-200 object-cover"
+                      class="aspect-square w-full rounded-2xl bg-surface-muted object-cover"
                     />
                   </li>
                 ))}
@@ -170,25 +170,44 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
           </div>
 
           <!-- Información y acciones -->
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-acero-500">
-              {product.category ?? 'Repuesto'} · {product.condition === 'USED' ? 'Usado' : 'Nuevo'}
-            </p>
-            <h1 class="mt-1 text-2xl font-extrabold leading-tight lg:text-3xl">{product.name}</h1>
+          <div class="flex flex-col justify-center">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="rounded-full bg-surface-muted px-3 py-1 text-xs font-bold text-carbon-900">
+                {product.category ?? 'Repuesto'}
+              </span>
+              <span class="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-acero-600">
+                {product.condition === 'USED' ? 'Usado revisado' : 'Nuevo'}
+              </span>
+            </div>
 
-            <p class="mt-2 text-sm text-acero-500">
-              SKU: <span class="font-mono text-carbon-900">{product.sku}</span>
+            <h1 class="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-carbon-950 lg:text-3xl">
+              {product.name}
+            </h1>
+
+            <p class="mt-2 text-xs text-acero-500 sm:text-sm">
+              SKU: <span class="font-mono font-semibold text-carbon-900">{product.sku}</span>
               {product.oemPartNumber && (
-                <> · N° de parte: <span class="font-mono text-carbon-900">{product.oemPartNumber}</span></>
+                <> · N° de parte OEM: <span class="font-mono font-semibold text-carbon-900">{product.oemPartNumber}</span></>
               )}
             </p>
 
-            <p class="mt-4 text-3xl font-extrabold text-carbon-900">{formatCLP(product.priceClp)}</p>
-            <p class="mt-1 text-sm font-semibold {stockState === 'ok' ? 'text-stock-ok' : stockState === 'low' ? 'text-stock-low' : 'text-stock-out'}">
-              {stockLabel}
-            </p>
+            <div class="mt-5 flex flex-wrap items-baseline gap-3">
+              <p class="text-3xl font-extrabold tracking-tight text-carbon-950">{formatCLP(product.priceClp)}</p>
+              <p
+                class:list={[
+                  'rounded-full px-3 py-1 text-xs font-bold',
+                  stockState === 'ok'
+                    ? 'bg-stock-ok/10 text-stock-ok'
+                    : stockState === 'low'
+                      ? 'bg-stock-low/10 text-stock-low'
+                      : 'bg-stock-out/10 text-stock-out',
+                ]}
+              >
+                {stockLabel}
+              </p>
+            </div>
 
-            <div class="mt-5">
+            <div class="mt-6">
               <ProductActions
                 client:load
                 productId={product.id}
@@ -204,8 +223,8 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
             </div>
 
             {product.description && (
-              <div class="mt-6 border-t border-acero-200 pt-4">
-                <h2 class="text-sm font-bold uppercase tracking-wide text-acero-600">Descripción</h2>
+              <div class="mt-7 rounded-3xl bg-surface-muted p-5">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-acero-600">Detalle técnico</h2>
                 <p class="mt-2 text-sm leading-relaxed text-carbon-900">{product.description}</p>
               </div>
             )}
@@ -213,12 +232,12 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
         </div>
 
         <!-- Motos compatibles -->
-        <section class="mt-10">
-          <h2 class="text-xl font-extrabold tracking-tight">Motos compatibles</h2>
+        <section class="mt-12">
+          <h2 class="text-xl font-extrabold tracking-tight text-carbon-950">Motos compatibles</h2>
           {compatibility.length > 0 ? (
-            <div class="mt-3 overflow-x-auto rounded-xl border border-acero-200">
+            <div class="mt-4 overflow-x-auto rounded-3xl bg-surface-muted p-2">
               <table class="w-full text-left text-sm">
-                <thead class="bg-acero-200/50 text-xs uppercase tracking-wide text-acero-600">
+                <thead class="text-xs uppercase tracking-wide text-acero-500">
                   <tr>
                     <th class="px-4 py-3">Marca</th>
                     <th class="px-4 py-3">Modelo</th>
@@ -226,11 +245,11 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
                     <th class="px-4 py-3">Nota técnica</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-acero-200">
+                <tbody class="divide-y divide-acero-200/70 rounded-2xl bg-white">
                   {compatibility.map((entry) => (
                     <tr>
-                      <td class="px-4 py-3 font-semibold">{entry.brand}</td>
-                      <td class="px-4 py-3">{entry.model}</td>
+                      <td class="px-4 py-3 font-bold text-carbon-900">{entry.brand}</td>
+                      <td class="px-4 py-3 font-medium">{entry.model}</td>
                       <td class="px-4 py-3 text-acero-600">
                         {entry.yearFrom || entry.yearTo
                           ? `${entry.yearFrom ?? ''} – ${entry.yearTo ?? 'actual'}`
@@ -243,49 +262,43 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
               </table>
             </div>
           ) : product.isUniversal ? (
-            <p class="mt-2 rounded-lg bg-stock-ok/10 px-4 py-3 text-sm text-stock-ok">
-              ✓ Producto universal: compatible con la mayoría de las motos.
+            <p class="mt-3 rounded-2xl bg-lime-500/20 px-4 py-3 text-sm font-semibold text-carbon-900">
+              ✓ Producto universal: compatible con la mayoría de las motocicletas.
             </p>
           ) : (
             <p class="mt-2 text-sm text-acero-500">
-              No hay motos registradas para este repuesto. Consúltanos por WhatsApp para confirmar
-              compatibilidad.
+              Consúltanos por WhatsApp para confirmar compatibilidad con tu modelo exacto.
             </p>
           )}
         </section>
 
         <!-- Información de envío -->
         <section class="mt-8">
-          <details class="rounded-xl border border-acero-200 p-4">
-            <summary class="cursor-pointer text-base font-bold">
+          <details class="rounded-3xl bg-surface-muted p-5">
+            <summary class="cursor-pointer text-base font-extrabold text-carbon-950">
               Información de envío a todo Chile
             </summary>
             <p class="mt-2 text-sm text-acero-500">
               {DISPATCH_CUTOFF_NOTE} Costos referenciales por región; el valor final se confirma en el
               checkout.
             </p>
-            {shippingSource === 'fallback' && import.meta.env.DEV && (
-              <p class="mt-2 text-xs text-acero-400">
-                Modo desarrollo: tarifas locales de referencia.
-              </p>
-            )}
-            <div class="mt-3 overflow-x-auto">
+            <div class="mt-4 overflow-x-auto rounded-2xl bg-white p-2">
               <table class="w-full text-left text-sm">
-                <thead class="bg-acero-200/50 text-xs uppercase tracking-wide text-acero-600">
+                <thead class="text-xs uppercase tracking-wide text-acero-500">
                   <tr>
                     <th class="px-3 py-2">Región</th>
                     <th class="px-3 py-2">Costo</th>
                     <th class="px-3 py-2">Plazo estimado</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-acero-200">
+                <tbody class="divide-y divide-acero-200/60">
                   {rates.map((rate) => (
                     <tr>
-                      <td class="px-3 py-2">{rate.regionName}</td>
-                      <td class="px-3 py-2 font-semibold">
+                      <td class="px-3 py-2.5">{rate.regionName}</td>
+                      <td class="px-3 py-2.5 font-bold">
                         {rate.baseCostClp === 0 ? 'Por pagar en destino' : formatCLP(rate.baseCostClp)}
                       </td>
-                      <td class="px-3 py-2 text-acero-600">{rate.estimatedDays}</td>
+                      <td class="px-3 py-2.5 text-acero-600">{rate.estimatedDays}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -293,7 +306,12 @@ const islaDePascuaWhatsApp = buildWhatsAppLink(
             </div>
             <p class="mt-3 text-xs text-acero-600">
               {ISLA_DE_PASCUA_NOTE}{' '}
-              <a href={islaDePascuaWhatsApp} target="_blank" rel="noopener noreferrer" class="font-semibold text-competicion-600 underline">
+              <a
+                href={islaDePascuaWhatsApp}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-bold text-carbon-950 underline"
+              >
                 Cotizar por WhatsApp
               </a>
             </p>

@@ -47,7 +47,7 @@ export default function OrderTracker({ initialCode = '' }: Props) {
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 sm:flex-row">
         <label className="sr-only" htmlFor="tracking-code">Código de seguimiento</label>
         <input
           id="tracking-code"
@@ -55,25 +55,25 @@ export default function OrderTracker({ initialCode = '' }: Props) {
           value={code}
           onChange={(event) => setCode(event.target.value)}
           placeholder="Ej. ALD-8F3K9P"
-          className="w-full rounded-lg border border-acero-300 px-4 py-3 text-base uppercase outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
+          className="w-full rounded-full border border-transparent bg-surface-muted px-5 py-3.5 text-base uppercase outline-none focus:border-carbon-900/20 focus:bg-white focus:ring-2 focus:ring-lime-500/40"
         />
         <button
           type="submit"
           disabled={state === 'loading'}
-          className="shrink-0 rounded-lg bg-competicion-500 px-6 py-3 text-sm font-bold text-white hover:bg-competicion-600 disabled:opacity-60"
+          className="shrink-0 rounded-full bg-lime-500 px-7 py-3.5 text-sm font-extrabold text-carbon-950 hover:bg-lime-400 disabled:opacity-60"
         >
           {state === 'loading' ? 'Buscando…' : 'Buscar pedido'}
         </button>
       </form>
 
       {state === 'notfound' && (
-        <p className="mt-6 rounded-lg bg-stock-out/10 px-4 py-3 text-sm text-stock-out">
+        <p className="mt-6 rounded-2xl bg-stock-out/10 px-4 py-3 text-sm text-stock-out">
           No encontramos un pedido con ese código. Revísalo o escríbenos por WhatsApp.
         </p>
       )}
 
       {state === 'found' && order && (
-        <div className="mt-6 rounded-xl border border-acero-200 p-5">
+        <div className="mt-6 rounded-3xl bg-surface-muted p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-xs text-acero-500">Pedido</p>
