@@ -1,0 +1,305 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import ProductActions from '../../components/storefront/ProductActions';
+import { getProductBySlug, productImages } from '../../lib/catalog';
+import {
+  DISPATCH_CUTOFF_NOTE,
+  ISLA_DE_PASCUA_NOTE,
+  getShippingRates,
+} from '../../lib/shipping';
+import { formatCLP } from '../../lib/formatters';
+import { buildWhatsAppLink } from '../../lib/whatsapp';
+
+const slug = Astro.params.slug ?? '';
+const product = slug ? await getProductBySlug(slug) : null;
+
+if (!product) {
+  Astro.response.status = 404;
+}
+
+const images = product ? productImages(product) : [];
+const mainImage = images[0];
+const compatibility = product?.compatibility ?? [];
+
+const stockState = !product
+  ? 'out'
+  : product.stock <= 0
+    ? 'out'
+    : product.stock <= product.lowStockThreshold
+      ? 'low'
+      : 'ok';
+
+const stockLabel = {
+  out: '🔴 Agotado temporalmente',
+  low: `🟠 ¡Últimas ${product?.stock ?? 0} unidades en bodega!`,
+  ok: '🟢 En stock — Despacho hoy mismo',
+}[stockState];
+
+const productUrl = product
+  ? new URL(`/producto/${product.slug}`, Astro.site ?? Astro.url).toString()
+  : '';
+
+const jsonLd = product
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      sku: product.sku,
+      description: product.description ?? product.name,
+      image: images.length > 0 ? images : undefined,
+      brand: {
+        '@type': 'Brand',
+        name: compatibility[0]?.brand ?? 'Genérico',
+      },
+      offers: {
+        '@type': 'Offer',
+        priceCurrency: 'CLP',
+        price: product.priceClp,
+        availability:
+          product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        itemCondition:
+          product.condition === 'USED'
+            ? 'https://schema.org/UsedCondition'
+            : 'https://schema.org/NewCondition',
+        url: productUrl,
+      },
+    }
+  : null;
+
+const { rates, source: shippingSource } = await getShippingRates();
+
+const islaDePascuaWhatsApp = buildWhatsAppLink(
+  undefined,
+  'Hola, quiero cotizar el despacho a Isla de Pascua (Rapa Nui).',
+);
+---
+
+<PublicLayout
+  title={product ? `${product.name} | Envío a todo Chile` : 'Producto no encontrado'}
+  description={
+    product
+      ? `${product.name}. SKU ${product.sku}. ${product.description ?? ''} Despacho el mismo día a todo Chile.`
+      : 'El producto que buscas no está disponible.'
+  }
+  canonical={product ? productUrl : undefined}
+  ogType={product ? 'product' : 'website'}
+  ogImage={product ? (mainImage ?? '/og-image.png') : undefined}
+>
+  {
+    jsonLd && (
+      <script
+        type="application/ld+json"
+        set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')}
+      />
+    )
+  }
+
+  {
+    !product ? (
+      <div class="mx-auto max-w-3xl px-4 py-20 text-center">
+        <p class="text-4xl">🔎</p>
+        <h1 class="mt-3 text-2xl font-extrabold">Producto no encontrado</h1>
+        <p class="mt-2 text-sm text-acero-500">
+          Puede que ya no esté disponible. Revisa el catálogo completo o consúltanos por WhatsApp.
+        </p>
+        <a
+          href="/catalogo"
+          class="mt-5 inline-block rounded-lg bg-competicion-500 px-6 py-3 text-sm font-bold text-white hover:bg-competicion-600"
+        >
+          Volver al catálogo
+        </a>
+      </div>
+    ) : (
+      <div class="mx-auto max-w-7xl px-4 py-6">
+        <nav aria-label="Ruta de navegación" class="text-xs text-acero-500">
+          <a href="/" class="hover:text-carbon-900">Inicio</a>
+          <span class="mx-1">/</span>
+          <a href="/catalogo" class="hover:text-carbon-900">Catálogo</a>
+          {product.category && (
+            <>
+              <span class="mx-1">/</span>
+              <a
+                href={`/catalogo?category=${product.categorySlug ?? ''}`}
+                class="hover:text-carbon-900"
+              >
+                {product.category}
+              </a>
+            </>
+          )}
+          <span class="mx-1">/</span>
+          <span class="text-carbon-900">{product.name}</span>
+        </nav>
+
+        <div class="mt-4 grid gap-8 lg:grid-cols-2">
+          <!-- Galería -->
+          <div>
+            <div class="overflow-hidden rounded-xl border border-acero-200 bg-acero-200/40">
+              {mainImage ? (
+                <img
+                  src={mainImage}
+                  alt={product.name}
+                  width="800"
+                  height="800"
+                  fetchpriority="high"
+                  decoding="async"
+                  class="aspect-square h-auto w-full object-cover"
+                />
+              ) : (
+                <div class="grid aspect-square w-full place-items-center text-7xl text-acero-400" aria-hidden="true">
+                  🏍️
+                </div>
+              )}
+            </div>
+            {images.length > 1 && (
+              <ul class="mt-2 grid grid-cols-5 gap-2">
+                {images.map((image) => (
+                  <li>
+                    <img
+                      src={image}
+                      alt={product.name}
+                      width="120"
+                      height="120"
+                      loading="lazy"
+                      decoding="async"
+                      class="aspect-square w-full rounded-lg border border-acero-200 object-cover"
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <!-- Información y acciones -->
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-acero-500">
+              {product.category ?? 'Repuesto'} · {product.condition === 'USED' ? 'Usado' : 'Nuevo'}
+            </p>
+            <h1 class="mt-1 text-2xl font-extrabold leading-tight lg:text-3xl">{product.name}</h1>
+
+            <p class="mt-2 text-sm text-acero-500">
+              SKU: <span class="font-mono text-carbon-900">{product.sku}</span>
+              {product.oemPartNumber && (
+                <> · N° de parte: <span class="font-mono text-carbon-900">{product.oemPartNumber}</span></>
+              )}
+            </p>
+
+            <p class="mt-4 text-3xl font-extrabold text-carbon-900">{formatCLP(product.priceClp)}</p>
+            <p class="mt-1 text-sm font-semibold {stockState === 'ok' ? 'text-stock-ok' : stockState === 'low' ? 'text-stock-low' : 'text-stock-out'}">
+              {stockLabel}
+            </p>
+
+            <div class="mt-5">
+              <ProductActions
+                client:load
+                productId={product.id}
+                sku={product.sku}
+                name={product.name}
+                slug={product.slug}
+                priceClp={product.priceClp}
+                stock={product.stock}
+                saleMode={product.saleMode}
+                oemPartNumber={product.oemPartNumber ?? null}
+                productUrl={productUrl}
+              />
+            </div>
+
+            {product.description && (
+              <div class="mt-6 border-t border-acero-200 pt-4">
+                <h2 class="text-sm font-bold uppercase tracking-wide text-acero-600">Descripción</h2>
+                <p class="mt-2 text-sm leading-relaxed text-carbon-900">{product.description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <!-- Motos compatibles -->
+        <section class="mt-10">
+          <h2 class="text-xl font-extrabold tracking-tight">Motos compatibles</h2>
+          {compatibility.length > 0 ? (
+            <div class="mt-3 overflow-x-auto rounded-xl border border-acero-200">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-acero-200/50 text-xs uppercase tracking-wide text-acero-600">
+                  <tr>
+                    <th class="px-4 py-3">Marca</th>
+                    <th class="px-4 py-3">Modelo</th>
+                    <th class="px-4 py-3">Años</th>
+                    <th class="px-4 py-3">Nota técnica</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-acero-200">
+                  {compatibility.map((entry) => (
+                    <tr>
+                      <td class="px-4 py-3 font-semibold">{entry.brand}</td>
+                      <td class="px-4 py-3">{entry.model}</td>
+                      <td class="px-4 py-3 text-acero-600">
+                        {entry.yearFrom || entry.yearTo
+                          ? `${entry.yearFrom ?? ''} – ${entry.yearTo ?? 'actual'}`
+                          : 'Todos'}
+                      </td>
+                      <td class="px-4 py-3 text-acero-600">{entry.fitmentNotes ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : product.isUniversal ? (
+            <p class="mt-2 rounded-lg bg-stock-ok/10 px-4 py-3 text-sm text-stock-ok">
+              ✓ Producto universal: compatible con la mayoría de las motos.
+            </p>
+          ) : (
+            <p class="mt-2 text-sm text-acero-500">
+              No hay motos registradas para este repuesto. Consúltanos por WhatsApp para confirmar
+              compatibilidad.
+            </p>
+          )}
+        </section>
+
+        <!-- Información de envío -->
+        <section class="mt-8">
+          <details class="rounded-xl border border-acero-200 p-4">
+            <summary class="cursor-pointer text-base font-bold">
+              Información de envío a todo Chile
+            </summary>
+            <p class="mt-2 text-sm text-acero-500">
+              {DISPATCH_CUTOFF_NOTE} Costos referenciales por región; el valor final se confirma en el
+              checkout.
+            </p>
+            {shippingSource === 'fallback' && import.meta.env.DEV && (
+              <p class="mt-2 text-xs text-acero-400">
+                Modo desarrollo: tarifas locales de referencia.
+              </p>
+            )}
+            <div class="mt-3 overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-acero-200/50 text-xs uppercase tracking-wide text-acero-600">
+                  <tr>
+                    <th class="px-3 py-2">Región</th>
+                    <th class="px-3 py-2">Costo</th>
+                    <th class="px-3 py-2">Plazo estimado</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-acero-200">
+                  {rates.map((rate) => (
+                    <tr>
+                      <td class="px-3 py-2">{rate.regionName}</td>
+                      <td class="px-3 py-2 font-semibold">
+                        {rate.baseCostClp === 0 ? 'Por pagar en destino' : formatCLP(rate.baseCostClp)}
+                      </td>
+                      <td class="px-3 py-2 text-acero-600">{rate.estimatedDays}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p class="mt-3 text-xs text-acero-600">
+              {ISLA_DE_PASCUA_NOTE}{' '}
+              <a href={islaDePascuaWhatsApp} target="_blank" rel="noopener noreferrer" class="font-semibold text-competicion-600 underline">
+                Cotizar por WhatsApp
+              </a>
+            </p>
+          </details>
+        </section>
+      </div>
+    )
+  }
+</PublicLayout>

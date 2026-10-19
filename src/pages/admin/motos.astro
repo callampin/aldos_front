@@ -1,0 +1,11 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import MotorcyclesManager from '../../components/admin/MotorcyclesManager';
+---
+
+<AdminLayout
+  title="Motos Compatibles"
+  subtitle="Marcas y modelos para relacionar con los repuestos (Ej. Honda XR 250R)."
+>
+  <MotorcyclesManager client:load />
+</AdminLayout>

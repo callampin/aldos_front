@@ -1,0 +1,35 @@
+---
+import '../../styles/global.css';
+import AdminLogin from '../../components/admin/AdminLogin';
+
+const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
+---
+
+<!doctype html>
+<html lang="es-CL">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Ingresar · Panel {storeName}</title>
+  </head>
+  <body class="grid min-h-screen place-items-center bg-carbon-900 p-4 text-carbon-900 antialiased">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+      <div class="text-center">
+        <span class="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-competicion-500 text-2xl">🏍️</span>
+        <h1 class="mt-3 text-xl font-extrabold">Panel {storeName}</h1>
+        <p class="mt-1 text-sm text-acero-500">Acceso para administración</p>
+      </div>
+
+      <div class="mt-6">
+        <AdminLogin client:load />
+      </div>
+
+      <p class="mt-4 rounded-lg bg-stock-low/10 px-3 py-2 text-[11px] leading-relaxed text-stock-low">
+        MODO DEMO: sin backend, entra con cualquier correo válido y una contraseña de 4+ caracteres.
+        Debe reemplazarse por el login real (ver <span class="font-mono">NOTAS.md</span>).
+      </p>
+    </div>
+  </body>
+</html>

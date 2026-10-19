@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# No indexar panel ni flujos privados
+Disallow: /admin
+Disallow: /checkout
+Disallow: /seguimiento
+
+Sitemap: https://aldosmotos.cl/sitemap.xml

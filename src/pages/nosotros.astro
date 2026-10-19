@@ -1,0 +1,111 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { buildWhatsAppLink } from '../lib/whatsapp';
+import { STORE_CONFIG } from '../lib/store-config';
+
+const whatsappLink = buildWhatsAppLink(
+  undefined,
+  'Hola, quiero hacer una consulta (empresa / proveedor / repuesto).',
+);
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'AutoPartsStore',
+  name: STORE_CONFIG.storeName,
+  email: STORE_CONFIG.storeEmail,
+  url: new URL('/', Astro.site ?? Astro.url).toString(),
+  areaServed: 'CL',
+};
+---
+
+<PublicLayout
+  title="Quiénes somos | Repuestos de motos con 20 años de experiencia"
+  description="Empresa familiar de repuestos para motos Enduro y Honda XR. Más de 20 años de experiencia técnica de Aldo y atención seria a empresas y talleres en todo Chile."
+>
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(orgJsonLd).replace(/</g, '\\u003c')}
+  />
+
+  <section class="bg-carbon-950 text-white">
+    <div class="mx-auto max-w-7xl px-4 py-12 lg:py-16">
+      <h1 class="text-3xl font-extrabold tracking-tight lg:text-4xl">Quiénes somos</h1>
+      <p class="mt-3 max-w-2xl text-acero-300">
+        Una empresa familiar dedicada a los repuestos para motos, con la experiencia real de taller que
+        marca la diferencia: no vendemos solo piezas, te ayudamos a que tu moto quede bien.
+      </p>
+    </div>
+  </section>
+
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <section class="space-y-4 text-[15px] leading-relaxed text-carbon-900">
+      <h2 class="text-xl font-extrabold tracking-tight">20 años de experiencia técnica</h2>
+      <p>
+        <strong>Aldo</strong> es mecánico especialista en motos de Enduro y en la querida línea
+        <strong> Honda XR</strong>. Con más de <strong>20 años</strong> reparando y rearmando motos, sabe
+        exactamente qué repuesto necesita cada modelo y qué alternativas sirven cuando una pieza original
+        escasea.
+      </p>
+      <p>
+        Esa experiencia es la base de cada recomendación: revisamos compatibilidad, medidas y versiones
+        (por ejemplo, la diferencia entre una XR 250R japonesa y otras variantes) antes de vender.
+      </p>
+
+      <h2 class="pt-4 text-xl font-extrabold tracking-tight">Gestión seria y cercana</h2>
+      <p>
+        <strong>Estrella</strong> lleva la administración y los despachos con un compromiso simple:
+        responder rápido, despachar el mismo día los pedidos ya pagados y mantener la información clara.
+      </p>
+
+      <h2 class="pt-4 text-xl font-extrabold tracking-tight">Para empresas, talleres y proveedores</h2>
+      <p>
+        Atendemos compras por volumen, facturación y cotizaciones. Escríbenos al correo institucional{' '}
+        <a href={`mailto:${STORE_CONFIG.storeEmail}`} class="font-semibold text-competicion-600 underline">
+          {STORE_CONFIG.storeEmail}
+        </a>{' '}
+        o por WhatsApp y te respondemos con una persona, sin bots.
+      </p>
+
+      <div class="grid gap-4 pt-4 sm:grid-cols-3">
+        <div class="rounded-xl border border-acero-200 p-4">
+          <p class="text-2xl">🚚</p>
+          <p class="mt-1 font-bold">Despacho a todo Chile</p>
+          <p class="mt-1 text-sm text-acero-500">De Arica a Punta Arenas e Isla de Pascua.</p>
+        </div>
+        <div class="rounded-xl border border-acero-200 p-4">
+          <p class="text-2xl">🔧</p>
+          <p class="mt-1 font-bold">Asesoría técnica real</p>
+          <p class="mt-1 text-sm text-acero-500">Confirmamos compatibilidad antes de vender.</p>
+        </div>
+        <div class="rounded-xl border border-acero-200 p-4">
+          <p class="text-2xl">💬</p>
+          <p class="mt-1 font-bold">Trato humano</p>
+          <p class="mt-1 text-sm text-acero-500">Por WhatsApp, sin asistentes automáticos.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-6">
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="rounded-lg bg-[#25D366] px-5 py-3 text-sm font-bold text-carbon-900 hover:brightness-95"
+        >
+          Consultar por WhatsApp
+        </a>
+        <a
+          href="/catalogo"
+          class="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+        >
+          Ver catálogo
+        </a>
+        <a
+          href="/politicas-envio-y-devoluciones"
+          class="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+        >
+          Políticas de envío y devoluciones
+        </a>
+      </div>
+    </section>
+  </div>
+</PublicLayout>

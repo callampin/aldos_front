@@ -1,0 +1,8 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import OrdersDashboard from '../../components/admin/OrdersDashboard';
+---
+
+<AdminLayout title="Pedidos del Día" subtitle="Gestiona pagos, despachos y avisos a clientes.">
+  <OrdersDashboard client:load />
+</AdminLayout>

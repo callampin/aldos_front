@@ -1,0 +1,11 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import ShippingConfig from '../../components/admin/ShippingConfig';
+---
+
+<AdminLayout
+  title="Configuración"
+  subtitle="Tarifas de envío, datos de transferencia y contacto de la tienda."
+>
+  <ShippingConfig client:load />
+</AdminLayout>

@@ -1,0 +1,30 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import CheckoutForm from '../../components/storefront/CheckoutForm';
+---
+
+<PublicLayout
+  title="Finalizar compra | Checkout rápido"
+  description="Completa tu pedido en menos de 2 minutos: datos, entrega y medio de pago. Despacho el mismo día a todo Chile."
+>
+  <meta slot="head" name="robots" content="noindex, nofollow" />
+
+  <div class="mx-auto max-w-7xl px-4 py-6">
+    <nav aria-label="Ruta de navegación" class="text-xs text-acero-500">
+      <a href="/" class="hover:text-carbon-900">Inicio</a>
+      <span class="mx-1">/</span>
+      <a href="/catalogo" class="hover:text-carbon-900">Catálogo</a>
+      <span class="mx-1">/</span>
+      <span class="text-carbon-900">Checkout</span>
+    </nav>
+
+    <h1 class="mt-2 text-2xl font-extrabold tracking-tight lg:text-3xl">Finalizar compra</h1>
+    <p class="mt-1 text-sm text-acero-500">
+      Completa tus datos y elige cómo pagar. No necesitas crear una cuenta.
+    </p>
+
+    <div class="mt-6">
+      <CheckoutForm client:load />
+    </div>
+  </div>
+</PublicLayout>

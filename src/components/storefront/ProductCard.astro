@@ -1,0 +1,67 @@
+---
+import { formatCLP } from '../../lib/formatters';
+import type { Product } from '../../lib/catalog';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+
+const stockState =
+  product.stock <= 0 ? 'out' : product.stock <= product.lowStockThreshold ? 'low' : 'ok';
+
+const stockBadge = {
+  out: { text: 'Agotado temporalmente', class: 'bg-stock-out/10 text-stock-out' },
+  low: { text: `¡Últimas ${product.stock} unidades!`, class: 'bg-stock-low/10 text-stock-low' },
+  ok: { text: 'En stock — despacho hoy', class: 'bg-stock-ok/10 text-stock-ok' },
+}[stockState];
+---
+
+<a
+  href={`/producto/${product.slug}`}
+  class="group flex flex-col overflow-hidden rounded-xl border border-acero-200 bg-white transition-shadow hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-competicion-500"
+>
+  <div class="relative aspect-square overflow-hidden bg-acero-200/50">
+    {
+      product.imageUrl ? (
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          width="400"
+          height="400"
+          loading="lazy"
+          decoding="async"
+          class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      ) : (
+        <span class="grid h-full w-full place-items-center text-5xl text-acero-400" aria-hidden="true">
+          🏍️
+        </span>
+      )
+    }
+    {
+      product.saleMode === 'WHATSAPP_ONLY' && (
+        <span class="absolute left-2 top-2 rounded-full bg-carbon-900/90 px-2.5 py-1 text-[11px] font-bold text-white">
+          Solo consulta
+        </span>
+      )
+    }
+  </div>
+
+  <div class="flex flex-1 flex-col p-3">
+    <p class="text-[11px] font-medium uppercase tracking-wide text-acero-500">
+      {product.category ?? 'Repuesto'}
+    </p>
+    <h3 class="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-carbon-900">
+      {product.name}
+    </h3>
+    <p class="mt-1 text-[11px] text-acero-400">SKU: {product.sku}</p>
+
+    <p class="mt-3 text-lg font-extrabold text-carbon-900">{formatCLP(product.priceClp)}</p>
+
+    <span class={`mt-2 inline-block w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold ${stockBadge.class}`}>
+      {stockBadge.text}
+    </span>
+  </div>
+</a>

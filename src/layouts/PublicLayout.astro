@@ -1,0 +1,249 @@
+---
+import '../styles/global.css';
+import { buildWhatsAppLink } from '../lib/whatsapp';
+import BikeSelectorBar from '../components/storefront/BikeSelectorBar';
+import CartButton from '../components/storefront/CartButton';
+import CartDrawer from '../components/storefront/CartDrawer';
+
+interface Props {
+  /** Título de la pestaña / SEO. */
+  title: string;
+  description?: string;
+  canonical?: string;
+  /** Tipo OpenGraph (`website`, `product`, …). */
+  ogType?: string;
+  /** Imagen para compartir (por defecto `/og-image.png`). */
+  ogImage?: string;
+}
+
+const {
+  title,
+  description = 'Repuestos y accesorios para motos Enduro y línea Honda XR. Despacho el mismo día a todo Chile.',
+  canonical,
+  ogType = 'website',
+  ogImage,
+} = Astro.props;
+
+const siteUrl = Astro.site ?? Astro.url;
+const canonicalUrl = canonical ? new URL(canonical, siteUrl).toString() : new URL(Astro.url.pathname, siteUrl).toString();
+const ogImageUrl = new URL(ogImage ?? '/og-image.png', siteUrl).toString();
+
+const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
+const storeEmail = import.meta.env.PUBLIC_STORE_EMAIL || 'contacto@dominio.cl';
+const whatsappLink = buildWhatsAppLink(
+  undefined,
+  'Hola, tengo una consulta sobre un repuesto para mi moto.',
+);
+
+const navLinks = [
+  { href: '/catalogo', label: 'Catálogo' },
+  { href: '/catalogo?line=XR_CLASSIC', label: 'Línea XR' },
+  { href: '/catalogo?line=ENDURO', label: 'Enduro' },
+  { href: '/seguimiento', label: 'Mi pedido' },
+  { href: '/nosotros', label: 'Nosotros' },
+];
+
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="es-CL">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- OpenGraph (Instagram / WhatsApp / Facebook) -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={storeName} />
+    <meta property="og:locale" content="es_CL" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <slot name="head" />
+  </head>
+  <body class="flex min-h-screen flex-col bg-white text-carbon-900 antialiased">
+    <a
+      href="#contenido"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-carbon-900 focus:px-3 focus:py-2 focus:text-white"
+      >Saltar al contenido</a
+    >
+
+    <!-- Barra superior de confianza -->
+    <div class="bg-carbon-950 text-acero-200">
+      <div
+        class="mx-auto flex max-w-7xl flex-col items-center gap-0.5 px-4 py-1.5 text-center text-xs sm:flex-row sm:justify-between sm:text-left"
+      >
+        <p class="font-medium">🚚 Despacho el mismo día de Arica a Punta Arenas e Isla de Pascua</p>
+        <a class="underline-offset-2 hover:text-white hover:underline" href={`mailto:${storeEmail}`}>
+          ✉️ {storeEmail}
+        </a>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 border-b border-acero-200 bg-white/95 backdrop-blur">
+      <div class="mx-auto max-w-7xl px-4">
+        <div class="flex items-center gap-3 py-2.5">
+          <a href="/" class="flex shrink-0 items-center gap-2" aria-label={`${storeName} — Inicio`}>
+            <span class="grid h-9 w-9 place-items-center rounded-lg bg-carbon-900 text-lg">🏍️</span>
+            <span class="text-lg font-extrabold tracking-tight">{storeName}</span>
+          </a>
+
+          <!-- Buscador (desktop) -->
+          <form
+            action="/catalogo"
+            method="get"
+            role="search"
+            class="hidden flex-1 items-center md:flex"
+          >
+            <label class="sr-only" for="q-desktop">Buscar repuesto por nombre, SKU o N° de parte</label>
+            <div class="relative w-full">
+              <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-acero-500">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              </span>
+              <input
+                id="q-desktop"
+                type="search"
+                name="q"
+                placeholder="Busca por repuesto, SKU o N° de parte…"
+                class="w-full rounded-lg border border-acero-300 bg-acero-200/40 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
+              />
+            </div>
+          </form>
+
+          <!-- Selector "Mi Moto" (isla React — HU-01) -->
+          <div class="hidden sm:block">
+            <BikeSelectorBar client:idle />
+          </div>
+
+          <!-- Carrito (isla React; abre el CartDrawer en la Etapa 3) -->
+          <div class="ml-auto md:ml-0">
+            <CartButton client:load />
+          </div>
+        </div>
+
+        <!-- Buscador + Mi Moto (móvil) -->
+        <div class="flex items-center gap-2 pb-2.5 md:hidden">
+          <form action="/catalogo" method="get" role="search" class="flex-1">
+            <label class="sr-only" for="q-mobile">Buscar repuesto</label>
+            <input
+              id="q-mobile"
+              type="search"
+              name="q"
+              placeholder="Busca tu repuesto…"
+              class="w-full rounded-lg border border-acero-300 bg-acero-200/40 px-3 py-2.5 text-sm outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
+            />
+          </form>
+          <BikeSelectorBar client:idle compact />
+        </div>
+      </div>
+
+      <!-- Navegación secundaria -->
+      <nav aria-label="Secciones" class="border-t border-acero-200 bg-white">
+        <ul
+          class="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-1 text-sm font-medium"
+        >
+          {
+            navLinks.map((link) => (
+              <li class="shrink-0">
+                <a
+                  href={link.href}
+                  class="block whitespace-nowrap rounded px-3 py-2 text-acero-600 hover:bg-acero-200/60 hover:text-carbon-900"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+
+    <main id="contenido" class="flex-1">
+      <slot />
+    </main>
+
+    <CartDrawer client:load />
+
+    <!-- Footer -->
+    <footer class="mt-12 bg-carbon-900 text-acero-300">
+      <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <p class="text-lg font-extrabold text-white">{storeName}</p>
+          <p class="mt-2 text-sm leading-relaxed">
+            Repuestos y accesorios para motos Enduro y línea Honda XR. 20 años de experiencia técnica
+            y asesoría real por WhatsApp.
+          </p>
+        </div>
+
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wide text-white">Tienda</p>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a class="hover:text-white" href="/catalogo">Catálogo completo</a></li>
+            <li><a class="hover:text-white" href="/catalogo?line=XR_CLASSIC">Línea Honda XR</a></li>
+            <li><a class="hover:text-white" href="/catalogo?line=ENDURO">Enduro / Competición</a></li>
+            <li><a class="hover:text-white" href="/seguimiento">Seguir mi pedido</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wide text-white">Información</p>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a class="hover:text-white" href="/nosotros">Quiénes somos</a></li>
+            <li>
+              <a class="hover:text-white" href="/politicas-envio-y-devoluciones"
+                >Políticas de envío y devoluciones</a
+              >
+            </li>
+            <li><a class="hover:text-white" href={`mailto:${storeEmail}`}>{storeEmail}</a></li>
+            <li>Despacho el mismo día (pedidos antes del cierre)</li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wide text-white">Contacto</p>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li>
+              <a class="hover:text-white" href={whatsappLink} target="_blank" rel="noopener noreferrer"
+                >WhatsApp Business</a
+              >
+            </li>
+            <li>
+              <a class="hover:text-white" href="https://instagram.com" target="_blank" rel="noopener noreferrer"
+                >Instagram</a
+              >
+            </li>
+            <li>
+              <a class="hover:text-white" href="https://facebook.com" target="_blank" rel="noopener noreferrer"
+                >Facebook</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-white/10">
+        <div
+          class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-xs sm:flex-row"
+        >
+          <p>© {year} {storeName}. Todos los derechos reservados.</p>
+          <p>Envíos de Arica a Punta Arenas, incluida Isla de Pascua 🇨🇱</p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

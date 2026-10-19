@@ -1,0 +1,52 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getDashboardStats } from '../../lib/admin';
+
+const { stats, source } = await getDashboardStats();
+
+const cards = [
+  { label: 'Para despachar hoy', value: stats.toDispatchToday, emoji: '🟢', href: '/admin/pedidos' },
+  { label: 'Por confirmar pago', value: stats.pendingPayment, emoji: '🟡', href: '/admin/pedidos' },
+  { label: 'En camino', value: stats.shippedToday, emoji: '🚚', href: '/admin/pedidos' },
+  { label: 'Productos con stock crítico', value: stats.lowStock, emoji: '📊', href: '/admin/productos' },
+  { label: 'Productos sin stock', value: stats.outOfStock, emoji: '🔴', href: '/admin/productos' },
+];
+---
+
+<AdminLayout title="Resumen del día" subtitle="Lo que necesita tu atención ahora.">
+  {source === 'mock' && (
+    <p class="mb-4 rounded-lg bg-stock-low/10 px-3 py-2 text-xs font-medium text-stock-low">
+      MODO DEMO: indicadores con pedidos de ejemplo (el backend aún no está conectado).
+    </p>
+  )}
+
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {
+      cards.map((card) => (
+        <a
+          href={card.href}
+          class="rounded-xl border border-acero-300 bg-white p-5 transition-colors hover:border-competicion-500"
+        >
+          <p class="text-2xl" aria-hidden="true">{card.emoji}</p>
+          <p class="mt-2 text-3xl font-extrabold">{card.value}</p>
+          <p class="mt-1 text-sm text-acero-500">{card.label}</p>
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="mt-6 flex flex-wrap gap-3">
+    <a
+      href="/admin/pedidos"
+      class="rounded-lg bg-competicion-500 px-5 py-3 text-sm font-bold text-white hover:bg-competicion-600"
+    >
+      Ir a Pedidos del Día
+    </a>
+    <a
+      href="/admin/productos"
+      class="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+    >
+      Inventario / Excel
+    </a>
+  </div>
+</AdminLayout>

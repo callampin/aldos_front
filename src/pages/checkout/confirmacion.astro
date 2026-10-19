@@ -1,0 +1,135 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import OrderConfirmationSummary from '../../components/storefront/OrderConfirmationSummary';
+import { STORE_CONFIG } from '../../lib/store-config';
+import { buildWhatsAppLink } from '../../lib/whatsapp';
+import { formatCLP } from '../../lib/formatters';
+
+const params = Astro.url.searchParams;
+const orderNumber = params.get('order') ?? '';
+const trackingCode = params.get('code') ?? '';
+const method = params.get('method') === 'BANK_TRANSFER' ? 'BANK_TRANSFER' : 'KHIPU';
+const total = Number(params.get('total') ?? 0);
+const customerName = params.get('name') ?? '';
+
+const whatsappMessage = [
+  `Hola, soy ${customerName || 'un cliente'}.`,
+  orderNumber ? `Acabo de hacer el pedido #${orderNumber}.` : 'Acabo de hacer un pedido.',
+  method === 'BANK_TRANSFER' ? 'Envío el comprobante de la transferencia.' : '',
+].filter(Boolean).join(' ');
+
+const whatsappUrl = buildWhatsAppLink(undefined, whatsappMessage);
+
+const trackingUrl = trackingCode ? `/seguimiento?code=${encodeURIComponent(trackingCode)}` : '/seguimiento';
+---
+
+<PublicLayout
+  title="Pedido confirmado | Gracias por tu compra"
+  description="Tu pedido fue registrado correctamente. Revisa tu código de seguimiento y los datos de pago."
+>
+  <meta slot="head" name="robots" content="noindex, nofollow" />
+
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    {
+      !orderNumber ? (
+        <div class="rounded-xl border border-dashed border-acero-300 p-10 text-center">
+          <p class="text-4xl">🧾</p>
+          <h1 class="mt-3 text-2xl font-extrabold">No encontramos tu pedido</h1>
+          <p class="mt-2 text-sm text-acero-500">
+            Si ya pagaste, revisa el correo de confirmación o escríbenos por WhatsApp.
+          </p>
+          <a
+            href="/catalogo"
+            class="mt-5 inline-block rounded-lg bg-competicion-500 px-6 py-3 text-sm font-bold text-white hover:bg-competicion-600"
+          >
+            Volver al catálogo
+          </a>
+        </div>
+      ) : (
+        <div class="space-y-6">
+          <div class="rounded-2xl bg-carbon-900 p-6 text-center text-white">
+            <p class="text-4xl">✅</p>
+            <h1 class="mt-3 text-2xl font-extrabold">¡Gracias por tu compra!</h1>
+            <p class="mt-1 text-sm text-acero-300">
+              {customerName ? `${customerName}, ` : ''}tu pedido quedó registrado.
+            </p>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              <div class="rounded-xl bg-white/10 p-3">
+                <p class="text-xs uppercase tracking-wide text-acero-300">N° de pedido</p>
+                <p class="mt-1 font-mono text-lg font-bold">{orderNumber}</p>
+              </div>
+              <div class="rounded-xl bg-white/10 p-3">
+                <p class="text-xs uppercase tracking-wide text-acero-300">Código de seguimiento</p>
+                <p class="mt-1 font-mono text-lg font-bold">{trackingCode || '—'}</p>
+              </div>
+            </div>
+
+            {total > 0 && (
+              <p class="mt-4 text-sm text-acero-300">
+                Total del pedido: <span class="text-lg font-bold text-white">{formatCLP(total)}</span>
+              </p>
+            )}
+          </div>
+
+          {method === 'BANK_TRANSFER' ? (
+            <section class="rounded-xl border border-acero-200 p-5">
+              <h2 class="text-base font-bold">Datos para la transferencia</h2>
+              <p class="mt-1 text-sm text-acero-500">
+                Transfiere el total y envíanos el comprobante por WhatsApp indicando tu N° de pedido.
+              </p>
+              <dl class="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                <div><dt class="text-acero-500">Banco</dt><dd class="font-semibold">{STORE_CONFIG.bank.bankName}</dd></div>
+                <div><dt class="text-acero-500">Tipo de cuenta</dt><dd class="font-semibold">{STORE_CONFIG.bank.accountType}</dd></div>
+                <div><dt class="text-acero-500">N° de cuenta</dt><dd class="font-semibold">{STORE_CONFIG.bank.accountNumber}</dd></div>
+                <div><dt class="text-acero-500">Titular</dt><dd class="font-semibold">{STORE_CONFIG.bank.holderName}</dd></div>
+                <div><dt class="text-acero-500">RUT</dt><dd class="font-semibold">{STORE_CONFIG.bank.holderRut}</dd></div>
+                <div><dt class="text-acero-500">Correo para comprobantes</dt><dd class="font-semibold">{STORE_CONFIG.bank.holderEmail}</dd></div>
+              </dl>
+              <p class="mt-3 rounded-lg bg-stock-low/10 px-3 py-2 text-xs font-medium text-stock-low">
+                Los datos bancarios son de ejemplo y deben configurarse antes de vender.
+              </p>
+            </section>
+          ) : (
+            <section class="rounded-xl border border-acero-200 p-5">
+              <h2 class="text-base font-bold">Pago con Khipu</h2>
+              <p class="mt-1 text-sm text-acero-500">
+                Si fuiste redirigido a Khipu, completa el pago allí. La confirmación es automática.
+                Si no se abrió la pasarela, escríbenos por WhatsApp.
+              </p>
+            </section>
+          )}
+
+          <OrderConfirmationSummary client:load />
+
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <a
+              href={trackingUrl}
+              class="flex-1 rounded-lg bg-carbon-900 px-5 py-3 text-center text-sm font-bold text-white hover:bg-carbon-800"
+            >
+              Seguir mi pedido
+            </a>
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex-1 rounded-lg bg-[#25D366] px-5 py-3 text-center text-sm font-bold text-carbon-900 hover:brightness-95"
+            >
+              Escribir por WhatsApp
+            </a>
+            <a
+              href="/catalogo"
+              class="flex-1 rounded-lg border border-acero-300 px-5 py-3 text-center text-sm font-semibold hover:border-carbon-900"
+            >
+              Seguir comprando
+            </a>
+          </div>
+
+          <p class="text-center text-xs text-acero-400">
+            Guarda tu código de seguimiento. También lo enviamos a tu correo.
+          </p>
+        </div>
+      )
+    }
+  </div>
+</PublicLayout>

@@ -1,0 +1,159 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import ProductCard from '../components/storefront/ProductCard.astro';
+import { getFeatured } from '../lib/catalog';
+import { buildWhatsAppLink } from '../lib/whatsapp';
+
+const { items: featured, source } = await getFeatured(8);
+
+const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
+const whatsappLink = buildWhatsAppLink(
+  undefined,
+  'Hola, quiero hacer una consulta sobre un repuesto para mi moto.',
+);
+
+const lines = [
+  {
+    href: '/catalogo?line=XR_CLASSIC',
+    title: 'Línea Clásica Honda XR',
+    text: 'Repuestos y piezas para XR 125, 150, 190, 250, 400, 600 y 650.',
+    emoji: '🟥',
+  },
+  {
+    href: '/catalogo?line=ENDURO',
+    title: 'Línea Enduro / Competición',
+    text: 'KTM, Husqvarna, Yamaha WR y más, para el barro y la carrera.',
+    emoji: '🏁',
+  },
+];
+---
+
+<PublicLayout
+  title="Aldo's Motos — Repuestos y Accesorios para Motos | Envío a todo Chile"
+  description="Repuestos y accesorios para motos Enduro y línea Honda XR. Despacho el mismo día a todo Chile. Asesoría técnica real por WhatsApp."
+>
+  <!-- Hero -->
+  <section class="bg-carbon-950 text-white">
+    <div class="mx-auto max-w-7xl px-4 py-12 text-center lg:py-16">
+      <h1 class="mx-auto max-w-3xl text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
+        Repuestos para tu <span class="text-competicion-500">Enduro</span> y línea
+        <span class="text-competicion-500">Honda XR</span>
+      </h1>
+      <p class="mx-auto mt-4 max-w-2xl text-acero-300">
+        Encuentra tu repuesto en segundos. Despacho el mismo día de Arica a Punta Arenas e Isla de
+        Pascua, con la asesoría técnica de Aldo (20 años de experiencia).
+      </p>
+
+      <form action="/catalogo" method="get" role="search" class="mx-auto mt-6 flex max-w-xl gap-2">
+        <label class="sr-only" for="q-home">Buscar repuesto</label>
+        <input
+          id="q-home"
+          type="search"
+          name="q"
+          placeholder="Ej. pistón XR 250, cadena 520 o 13101-KCE-670"
+          class="w-full rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-base text-white placeholder:text-acero-400 outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
+        />
+        <button
+          type="submit"
+          class="shrink-0 rounded-lg bg-competicion-500 px-5 py-3 text-sm font-bold hover:bg-competicion-600"
+        >
+          Buscar
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Líneas estrella -->
+  <section class="mx-auto max-w-7xl px-4 py-8">
+    <div class="grid gap-4 sm:grid-cols-2">
+      {
+        lines.map((line) => (
+          <a
+            href={line.href}
+            class="flex items-center gap-4 rounded-xl border border-acero-200 p-5 transition-colors hover:border-competicion-500 hover:bg-acero-200/30"
+          >
+            <span class="text-3xl" aria-hidden="true">{line.emoji}</span>
+            <span>
+              <span class="block font-bold text-carbon-900">{line.title}</span>
+              <span class="mt-0.5 block text-sm text-acero-500">{line.text}</span>
+            </span>
+            <span class="ml-auto text-competicion-600">→</span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Destacados -->
+  <section class="mx-auto max-w-7xl px-4 py-6">
+    <div class="flex items-end justify-between gap-3">
+      <h2 class="text-xl font-extrabold tracking-tight lg:text-2xl">Repuestos destacados</h2>
+      <a href="/catalogo" class="text-sm font-semibold text-competicion-600 hover:underline">
+        Ver todo el catálogo
+      </a>
+    </div>
+
+    {source === 'fallback' && import.meta.env.DEV && (
+      <p class="mt-2 text-xs text-acero-500">
+        Modo desarrollo: el backend no respondió, se muestran productos de ejemplo.
+      </p>
+    )}
+
+    <ul class="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+      {featured.map((product) => <li><ProductCard product={product} /></li>)}
+    </ul>
+  </section>
+
+  <!-- Confianza -->
+  <section class="mx-auto max-w-7xl px-4 py-10">
+    <div class="grid gap-4 rounded-2xl bg-carbon-900 p-6 text-white sm:grid-cols-3 lg:p-8">
+      <div>
+        <p class="text-2xl">🚚</p>
+        <p class="mt-2 font-bold">Despacho el mismo día</p>
+        <p class="mt-1 text-sm text-acero-300">De Arica a Punta Arenas, incluida Isla de Pascua.</p>
+      </div>
+      <div>
+        <p class="text-2xl">🔧</p>
+        <p class="mt-2 font-bold">20 años de experiencia</p>
+        <p class="mt-1 text-sm text-acero-300">
+          Asesoría técnica real de Aldo, especialista en XR y Enduro.
+        </p>
+      </div>
+      <div>
+        <p class="text-2xl">💬</p>
+        <p class="mt-2 font-bold">Trato 100% humano</p>
+        <p class="mt-1 text-sm text-acero-300">Sin bots: te responde una persona por WhatsApp.</p>
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+      <a
+        href={whatsappLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-lg bg-[#25D366] px-5 py-3 text-sm font-bold text-carbon-900 hover:brightness-95"
+      >
+        Consultar por WhatsApp
+      </a>
+      <a
+        href="https://instagram.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+      >
+        Instagram
+      </a>
+      <a
+        href="https://facebook.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+      >
+        Facebook
+      </a>
+    </div>
+    <p class="mt-3 text-center text-xs text-acero-500">
+      {storeName} · Atención por WhatsApp de lunes a sábado.
+    </p>
+  </section>
+</PublicLayout>

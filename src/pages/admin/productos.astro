@@ -1,0 +1,11 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import ProductsExcelTable from '../../components/admin/ProductsExcelTable';
+---
+
+<AdminLayout
+  title="Inventario / Excel"
+  subtitle="Edita precio, stock, modo de venta y visibilidad directamente en la tabla."
+>
+  <ProductsExcelTable client:load />
+</AdminLayout>

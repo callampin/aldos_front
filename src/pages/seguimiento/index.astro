@@ -1,0 +1,31 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import OrderTracker from '../../components/storefront/OrderTracker';
+
+const code = Astro.url.searchParams.get('code') ?? '';
+---
+
+<PublicLayout
+  title="¿Dónde está mi pedido? | Seguimiento"
+  description="Consulta el estado de tu pedido con tu código de seguimiento. Sin necesidad de crear una cuenta."
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <h1 class="text-2xl font-extrabold tracking-tight lg:text-3xl">¿Dónde está mi pedido?</h1>
+    <p class="mt-1 text-sm text-acero-500">
+      Ingresa el código de seguimiento que te enviamos al correo (ej. <span class="font-mono">ALD-8F3K9P</span>).
+      No necesitas crear una cuenta.
+    </p>
+
+    <div class="mt-6">
+      <OrderTracker client:load initialCode={code} />
+    </div>
+
+    <div class="mt-8 rounded-xl bg-acero-200/50 p-4 text-sm text-acero-600">
+      <p class="font-semibold text-carbon-900">¿No encuentras tu código?</p>
+      <p class="mt-1">
+        Revisa tu correo o el WhatsApp de confirmación. También puedes escribirnos adjuntando tu N° de
+        pedido.
+      </p>
+    </div>
+  </div>
+</PublicLayout>

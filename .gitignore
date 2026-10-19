@@ -1,0 +1,18 @@
+# Dependencias
+node_modules/
+
+# Build de Astro / Cloudflare
+dist/
+.astro/
+.wrangler/
+
+# Variables de entorno (nunca commitear secretos)
+.env
+.env.*
+!.env.example
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
+*.log
+.opencode/

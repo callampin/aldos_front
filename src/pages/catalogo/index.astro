@@ -1,0 +1,247 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import ProductCard from '../../components/storefront/ProductCard.astro';
+import { CATEGORIES, SORT_OPTIONS, getCatalog, parseCatalogFilters } from '../../lib/catalog';
+import { getMotorcycleCatalog, modelYears } from '../../lib/motorcycles';
+
+const params = Astro.url.searchParams;
+const filters = parseCatalogFilters(params);
+
+const [result, motorcycles] = await Promise.all([getCatalog(filters), getMotorcycleCatalog()]);
+
+const selectedBrand = motorcycles.find((entry) => entry.brand === filters.brand);
+const models = selectedBrand?.models ?? [];
+const selectedModel = models.find((entry) => entry.model === filters.model);
+const years = selectedModel ? modelYears(selectedModel) : [];
+
+const lineLabel =
+  filters.line === 'XR_CLASSIC'
+    ? 'Línea Honda XR'
+    : filters.line === 'ENDURO'
+      ? 'Enduro / Competición'
+      : null;
+
+const hasFilters = Boolean(
+  filters.q || filters.category || filters.brand || filters.model || filters.year || filters.line || filters.inStockOnly,
+);
+
+function pageUrl(page: number): string {
+  const next = new URLSearchParams(params);
+  next.set('page', String(page));
+  return `/catalogo?${next.toString()}`;
+}
+---
+
+<PublicLayout
+  title={`${lineLabel ? `${lineLabel} · ` : ''}Catálogo de Repuestos | Envío a todo Chile`}
+  description="Catálogo de repuestos y accesorios para motos Enduro y Honda XR. Filtra por modelo de moto, categoría y stock. Despacho el mismo día."
+>
+  <div class="mx-auto max-w-7xl px-4 py-6">
+    <nav aria-label="Ruta de navegación" class="text-xs text-acero-500">
+      <a href="/" class="hover:text-carbon-900">Inicio</a>
+      <span class="mx-1">/</span>
+      <span class="text-carbon-900">Catálogo</span>
+      {lineLabel && <><span class="mx-1">/</span><span class="text-carbon-900">{lineLabel}</span></>}
+    </nav>
+
+    <div class="mt-2 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-tight lg:text-3xl">{lineLabel ?? 'Catálogo de repuestos'}</h1>
+        <p class="mt-1 text-sm text-acero-500">
+          {result.total} {result.total === 1 ? 'repuesto encontrado' : 'repuestos encontrados'} · Despacho el mismo día
+        </p>
+      </div>
+      {hasFilters && (
+        <a href="/catalogo" class="text-sm font-semibold text-competicion-600 hover:underline">
+          Limpiar filtros
+        </a>
+      )}
+    </div>
+
+    <!-- Filtros combinables (funcionan sin JavaScript) -->
+    <form
+      action="/catalogo"
+      method="get"
+      class="mt-5 rounded-xl border border-acero-200 bg-acero-200/30 p-3 sm:p-4"
+    >
+      {filters.line && <input type="hidden" name="line" value={filters.line} />}
+
+      <div class="grid grid-cols-2 gap-2.5 lg:grid-cols-12">
+        <label class="col-span-2 block text-xs font-semibold text-acero-600 lg:col-span-4">
+          Buscar por nombre, SKU o N° de parte
+          <input
+            type="search"
+            name="q"
+            value={filters.q ?? ''}
+            placeholder="Ej. pistón XR 250 o 13101-KCE-670"
+            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-3 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 focus:ring-2 focus:ring-competicion-500/30"
+          />
+        </label>
+
+        <label class="col-span-1 block text-xs font-semibold text-acero-600 lg:col-span-2">
+          Categoría
+          <select
+            name="category"
+            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500"
+          >
+            <option value="">Todas</option>
+            {
+              CATEGORIES.map((category) => (
+                <option value={category.slug} selected={filters.category === category.slug}>
+                  {category.name}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+
+        <label class="col-span-1 block text-xs font-semibold text-acero-600 lg:col-span-2">
+          Marca de moto
+          <select
+            name="brand"
+            onchange="this.form.requestSubmit()"
+            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500"
+          >
+            <option value="">Todas</option>
+            {
+              motorcycles.map((entry) => (
+                <option value={entry.brand} selected={filters.brand === entry.brand}>
+                  {entry.brand}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+
+        <label class="col-span-1 block text-xs font-semibold text-acero-600 lg:col-span-2">
+          Modelo
+          <select
+            name="model"
+            onchange="this.form.requestSubmit()"
+            disabled={!filters.brand}
+            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 disabled:bg-acero-200/50 disabled:text-acero-500"
+          >
+            <option value="">{filters.brand ? 'Todos' : 'Elige marca'}</option>
+            {
+              models.map((entry) => (
+                <option value={entry.model} selected={filters.model === entry.model}>
+                  {entry.model}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+
+        <label class="col-span-1 block text-xs font-semibold text-acero-600 lg:col-span-2">
+          Año
+          <select
+            name="year"
+            disabled={!filters.model}
+            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500 disabled:bg-acero-200/50 disabled:text-acero-500"
+          >
+            <option value="">Todos</option>
+            {
+              years.map((year) => (
+                <option value={year} selected={filters.year === year}>
+                  {year}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+
+        <label class="col-span-1 block text-xs font-semibold text-acero-600 lg:col-span-3">
+          Ordenar por
+          <select
+            name="sort"
+            class="mt-1 w-full rounded-lg border border-acero-300 bg-white px-2.5 py-2.5 text-sm font-normal text-carbon-900 outline-none focus:border-competicion-500"
+          >
+            {
+              SORT_OPTIONS.map((option) => (
+                <option value={option.value} selected={filters.sort === option.value}>
+                  {option.label}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+
+        <div class="col-span-2 flex flex-col justify-end gap-2.5 lg:col-span-9">
+          <label class="flex items-center gap-2 text-sm font-medium text-carbon-900">
+            <input
+              type="checkbox"
+              name="inStock"
+              value="1"
+              checked={filters.inStockOnly}
+              class="h-5 w-5 rounded border-acero-300 text-competicion-500 focus:ring-competicion-500"
+            />
+            Mostrar solo repuestos con stock
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="col-span-2 w-full rounded-lg bg-carbon-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-carbon-800 lg:col-span-3 lg:w-auto"
+        >
+          Aplicar filtros
+        </button>
+      </div>
+    </form>
+
+    {result.source === 'fallback' && import.meta.env.DEV && (
+      <p class="mt-3 rounded-lg bg-acero-200/60 px-3 py-2 text-xs text-acero-600">
+        Modo desarrollo: el backend no respondió, se muestra el catálogo local de ejemplo.
+      </p>
+    )}
+
+    {
+      result.items.length > 0 ? (
+        <ul class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {result.items.map((product) => (
+            <li>
+              <ProductCard product={product} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="mt-8 rounded-xl border border-dashed border-acero-300 p-10 text-center">
+          <p class="text-3xl">🔎</p>
+          <p class="mt-2 font-bold">No encontramos repuestos con esos filtros</p>
+          <p class="mt-1 text-sm text-acero-500">
+            Prueba con otra moto o revisa el catálogo completo.
+          </p>
+          <a
+            href="/catalogo"
+            class="mt-4 inline-block rounded-lg bg-competicion-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-competicion-600"
+          >
+            Ver todo el catálogo
+          </a>
+        </div>
+      )
+    }
+
+    {
+      result.totalPages > 1 && (
+        <nav aria-label="Paginación" class="mt-8 flex items-center justify-between gap-3 text-sm">
+          {result.page > 1 ? (
+            <a href={pageUrl(result.page - 1)} class="rounded-lg border border-acero-300 px-4 py-2 font-semibold hover:border-carbon-900">
+              ← Anterior
+            </a>
+          ) : (
+            <span />
+          )}
+          <span class="text-acero-500">
+            Página {result.page} de {result.totalPages}
+          </span>
+          {result.page < result.totalPages ? (
+            <a href={pageUrl(result.page + 1)} class="rounded-lg border border-acero-300 px-4 py-2 font-semibold hover:border-carbon-900">
+              Siguiente →
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )
+    }
+  </div>
+</PublicLayout>

@@ -1,0 +1,100 @@
+---
+import '../styles/global.css';
+import AdminGuard from '../components/admin/AdminGuard';
+
+interface Props {
+  /** Título visible de la sección (ej. "Pedidos del Día"). */
+  title: string;
+  /** Subtítulo / ayuda breve para Estrella. */
+  subtitle?: string;
+}
+
+const { title, subtitle } = Astro.props;
+
+const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
+const path = Astro.url.pathname;
+
+const navItems = [
+  { href: '/admin', label: 'Pedidos del Día', icon: '📦' },
+  { href: '/admin/productos', label: 'Inventario / Excel', icon: '📊' },
+  { href: '/admin/motos', label: 'Motos Compatibles', icon: '🏍️' },
+  { href: '/admin/configuracion', label: 'Configuración', icon: '⚙️' },
+];
+
+const isActive = (href: string) => (href === '/admin' ? path === '/admin' : path.startsWith(href));
+---
+
+<!doctype html>
+<html lang="es-CL">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · Panel {storeName}</title>
+    <slot name="head" />
+  </head>
+  <body class="min-h-screen bg-acero-200 text-carbon-900 antialiased">
+    <div class="lg:grid lg:min-h-screen lg:grid-cols-[16rem_1fr]">
+      <!-- Menú lateral (escritorio) / barra superior (móvil) -->
+      <aside class="bg-carbon-900 text-acero-200">
+        <div class="flex items-center justify-between px-4 py-3 lg:py-5">
+          <a href="/admin" class="flex items-center gap-2">
+            <span class="grid h-8 w-8 place-items-center rounded-lg bg-competicion-500 text-sm">🏍️</span>
+            <span class="font-extrabold text-white">Panel {storeName}</span>
+          </a>
+          <a
+            href="/"
+            class="rounded border border-white/20 px-2 py-1 text-xs hover:bg-white/10 lg:hidden"
+            >Ver tienda</a
+          >
+        </div>
+
+        <nav aria-label="Secciones del panel" class="px-2 pb-2">
+          <ul class="flex gap-1 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible lg:px-2">
+            {
+              navItems.map((item) => (
+                <li class="shrink-0 lg:w-full">
+                  <a
+                    href={item.href}
+                    aria-current={isActive(item.href) ? 'page' : undefined}
+                    class:list={[
+                      'flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-base font-semibold transition-colors lg:text-[15px]',
+                      isActive(item.href)
+                        ? 'bg-competicion-500 text-white'
+                        : 'text-acero-200 hover:bg-white/10 hover:text-white',
+                    ]}
+                  >
+                    <span aria-hidden="true">{item.icon}</span>
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        <div class="hidden border-t border-white/10 lg:block">
+          <a
+            href="/"
+            class="flex items-center gap-2 px-4 py-3 text-sm text-acero-200 hover:bg-white/10 hover:text-white"
+            >← Ver tienda pública</a
+          >
+          <AdminGuard client:load />
+        </div>
+      </aside>
+
+      <!-- Contenido -->
+      <div class="flex min-h-screen flex-col">
+        <header class="border-b border-acero-300 bg-white px-4 py-4 lg:px-8 lg:py-5">
+          <h1 class="text-xl font-bold lg:text-2xl">{title}</h1>
+          {subtitle && <p class="mt-0.5 text-sm text-acero-500">{subtitle}</p>}
+        </header>
+
+        <main class="flex-1 px-4 py-6 lg:px-8">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

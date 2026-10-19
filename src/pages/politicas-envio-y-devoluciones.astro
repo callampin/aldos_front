@@ -1,0 +1,122 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { DISPATCH_CUTOFF_NOTE, ISLA_DE_PASCUA_NOTE, getShippingRates } from '../lib/shipping';
+import { formatCLP } from '../lib/formatters';
+import { STORE_CONFIG } from '../lib/store-config';
+import { buildWhatsAppLink } from '../lib/whatsapp';
+
+const { rates, source } = await getShippingRates();
+const whatsappLink = buildWhatsAppLink(undefined, 'Hola, tengo una consulta sobre envíos y devoluciones.');
+const lastUpdate = 'octubre de 2026';
+---
+
+<PublicLayout
+  title="Políticas de envío y devoluciones | Compra protegida"
+  description="Información transparente de despachos a todo Chile, plazos, costos por región y devoluciones según la Ley del Consumidor."
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <h1 class="text-2xl font-extrabold tracking-tight lg:text-3xl">Políticas de envío y devoluciones</h1>
+    <p class="mt-1 text-xs text-acero-500">Última actualización: {lastUpdate}</p>
+
+    <section class="mt-8 space-y-3 text-[15px] leading-relaxed text-carbon-900">
+      <h2 class="text-xl font-extrabold tracking-tight">1. Despachos</h2>
+      <p>
+        Despachamos a <strong>todo Chile</strong>: de Arica a Punta Arenas e Isla de Pascua. {DISPATCH_CUTOFF_NOTE}
+      </p>
+      <p>
+        Cada pedido despachado recibe un <strong>código de seguimiento</strong> con el que puedes ver su
+        estado en <a href="/seguimiento" class="font-semibold text-competicion-600 underline">la página de seguimiento</a>.
+      </p>
+      <p>
+        También puedes optar por <strong>retiro en taller</strong>: {STORE_CONFIG.pickupAddress}
+      </p>
+    </section>
+
+    <section class="mt-8">
+      <h2 class="text-xl font-extrabold tracking-tight">2. Costos de envío por región</h2>
+      <p class="mt-2 text-sm text-acero-500">
+        Valores referenciales; el costo final se confirma en el checkout.
+      </p>
+      {source === 'fallback' && import.meta.env.DEV && (
+        <p class="mt-2 text-xs text-acero-400">Modo desarrollo: tarifas locales de referencia.</p>
+      )}
+      <div class="mt-3 overflow-x-auto rounded-xl border border-acero-200">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-acero-200/50 text-xs uppercase tracking-wide text-acero-600">
+            <tr>
+              <th class="px-3 py-2">Región</th>
+              <th class="px-3 py-2">Costo</th>
+              <th class="px-3 py-2">Plazo estimado</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-acero-200">
+            {rates.map((rate) => (
+              <tr>
+                <td class="px-3 py-2">{rate.regionName}</td>
+                <td class="px-3 py-2 font-semibold">
+                  {rate.baseCostClp === 0 ? 'Por pagar en destino' : formatCLP(rate.baseCostClp)}
+                </td>
+                <td class="px-3 py-2 text-acero-600">{rate.estimatedDays}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-xs text-acero-600">{ISLA_DE_PASCUA_NOTE}</p>
+    </section>
+
+    <section class="mt-8 space-y-3 text-[15px] leading-relaxed text-carbon-900">
+      <h2 class="text-xl font-extrabold tracking-tight">3. Derecho a retracto (compras a distancia)</h2>
+      <p>
+        Según la <strong>Ley del Consumidor (Ley 19.496)</strong>, en compras a distancia tienes derecho a
+        <strong> retractarte dentro de 10 días corridos</strong> contados desde la recepción del producto,
+        sin expresión de causa, siempre que el producto esté sin uso y en su empaque original.
+      </p>
+      <p>
+        Para ejercerlo, escríbenos por WhatsApp o al correo{' '}
+        <a href={`mailto:${STORE_CONFIG.storeEmail}`} class="font-semibold text-competicion-600 underline">
+          {STORE_CONFIG.storeEmail}
+        </a>{' '}
+        indicando tu N° de pedido. Coordinaremos la devolución del producto y el reembolso del monto pagado.
+      </p>
+      <p class="rounded-lg bg-acero-200/50 px-3 py-2 text-sm text-acero-600">
+        Algunos casos quedan fuera del retracto (por ejemplo, productos usados, a pedido especial o
+        personalizados). Te lo informamos claramente antes de confirmar tu compra.
+      </p>
+    </section>
+
+    <section class="mt-8 space-y-3 text-[15px] leading-relaxed text-carbon-900">
+      <h2 class="text-xl font-extrabold tracking-tight">4. Garantía legal</h2>
+      <p>
+        Si un producto nuevo presenta una <strong>falla de fábrica</strong>, tienes derecho a exigir
+        <strong> reparación, cambio o devolución</strong> conforme a la Ley 19.496. Escríbenos con tu N° de
+        pedido y una descripción (idealmente con fotos) y gestionamos la solución.
+      </p>
+    </section>
+
+    <section class="mt-8 space-y-3 text-[15px] leading-relaxed text-carbon-900">
+      <h2 class="text-xl font-extrabold tracking-tight">5. Repuestos usados</h2>
+      <p>
+        Algunos repuestos se ofrecen <strong>usados y probados</strong> (por ejemplo, piezas escasas de la
+        línea XR). En esos casos, la ficha del producto y el asesoramiento previo indican su condición, y
+        la compra se coordina por WhatsApp para confirmar compatibilidad y estado.
+      </p>
+    </section>
+
+    <section class="mt-8 rounded-xl bg-carbon-900 p-5 text-white">
+      <h2 class="text-lg font-extrabold">¿Tienes dudas?</h2>
+      <p class="mt-1 text-sm text-acero-300">
+        Te responde una persona del equipo, sin bots. También puedes escribirnos a{' '}
+        <a href={`mailto:${STORE_CONFIG.storeEmail}`} class="underline">{STORE_CONFIG.storeEmail}</a>.
+      </p>
+      <a
+        href={whatsappLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-3 inline-block rounded-lg bg-[#25D366] px-5 py-3 text-sm font-bold text-carbon-900 hover:brightness-95"
+      >
+        Escribir por WhatsApp
+      </a>
+    </section>
+  </div>
+</PublicLayout>
