@@ -3,7 +3,7 @@ import type { Product, SaleMode } from '../../lib/catalog';
 import {
   getAdminProducts,
   quickUpdateProduct,
-  saveAdminProduct,
+  type CompatibilityWarning,
   type ProductQuickUpdate,
 } from '../../lib/admin-products';
 import { formatCLP, parseCLP } from '../../lib/formatters';
@@ -21,7 +21,8 @@ interface CellEdit {
 export default function ProductsExcelTable() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState<'api' | 'mock'>('mock');
+  const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<CompatibilityWarning[]>([]);
   const [query, setQuery] = useState('');
   const [savedId, setSavedId] = useState<number | null>(null);
   const [cell, setCell] = useState<CellEdit | null>(null);
@@ -29,11 +30,15 @@ export default function ProductsExcelTable() {
   const [batchOpen, setBatchOpen] = useState(false);
 
   useEffect(() => {
-    getAdminProducts().then((result) => {
-      setProducts(result.products);
-      setSource(result.source);
-      setLoading(false);
-    });
+    getAdminProducts()
+      .then((result) => {
+        setProducts(result.products);
+        setLoading(false);
+      })
+      .catch((caught) => {
+        setError(caught instanceof Error ? caught.message : 'No pudimos cargar el inventario.');
+        setLoading(false);
+      });
   }, []);
 
   const filtered = useMemo(() => {
@@ -49,10 +54,25 @@ export default function ProductsExcelTable() {
     window.setTimeout(() => setSavedId((current) => (current === id ? null : current)), 1600);
   }
 
-  function commit(id: number, changes: ProductQuickUpdate) {
-    setProducts((previous) => previous.map((product) => (product.id === id ? { ...product, ...changes } : product)));
-    flashSaved(id);
-    void quickUpdateProduct(id, changes);
+  async function commit(id: number, changes: ProductQuickUpdate) {
+    setError(null);
+    const previousSnapshot = products.find((product) => product.id === id);
+    setProducts((previous) =>
+      previous.map((product) => (product.id === id ? { ...product, ...changes } : product)),
+    );
+    try {
+      await quickUpdateProduct(id, changes);
+      flashSaved(id);
+    } catch (caught) {
+      if (previousSnapshot) {
+        setProducts((previous) =>
+          previous.map((product) => (product.id === id ? previousSnapshot : product)),
+        );
+      }
+      setError(
+        caught instanceof Error ? caught.message : 'No pudimos guardar el cambio en el servidor.',
+      );
+    }
   }
 
   function beginEdit(product: Product, field: EditableField) {
@@ -64,7 +84,7 @@ export default function ProductsExcelTable() {
     const parsed = Math.max(0, parseCLP(cell.value));
     const product = products.find((entry) => entry.id === cell.id);
     if (product && product[cell.field] !== parsed) {
-      commit(cell.id, { [cell.field]: parsed } as ProductQuickUpdate);
+      void commit(cell.id, { [cell.field]: parsed } as ProductQuickUpdate);
     }
     const editedId = cell.id;
     setCell(null);
@@ -113,11 +133,20 @@ export default function ProductsExcelTable() {
 
   return (
     <div>
-      {source === 'mock' && (
-        <p className="mb-4 rounded-lg bg-stock-low/10 px-3 py-2 text-xs font-medium text-stock-low">
-          MODO DEMO: catálogo de ejemplo (el backend aún no está conectado). Los cambios se guardan solo
-          en memoria.
+      {error && (
+        <p className="mb-4 rounded-lg bg-stock-out/10 px-3 py-2 text-xs font-medium text-stock-out">
+          {error}
         </p>
+      )}
+      {warnings.length > 0 && (
+        <div className="mb-4 rounded-lg bg-stock-low/15 px-3 py-2 text-xs text-stock-low">
+          <p className="font-bold">Aviso sobre motos compatibles:</p>
+          <ul className="mt-1 list-disc pl-4">
+            {warnings.map((w, idx) => (
+              <li key={`${w.brand}-${w.model}-${idx}`}>{w.message}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -188,7 +217,7 @@ export default function ProductsExcelTable() {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         type="button"
-                        onClick={() => commit(product.id, { stock: Math.max(0, product.stock - 1) })}
+                        onClick={() => void commit(product.id, { stock: Math.max(0, product.stock - 1) })}
                         className="grid h-7 w-7 place-items-center rounded border border-acero-300 font-bold hover:border-carbon-900"
                         aria-label="Restar stock"
                       >
@@ -197,7 +226,7 @@ export default function ProductsExcelTable() {
                       <span className="w-12">{renderEditable(product, 'stock', String(product.stock), true)}</span>
                       <button
                         type="button"
-                        onClick={() => commit(product.id, { stock: product.stock + 1 })}
+                        onClick={() => void commit(product.id, { stock: product.stock + 1 })}
                         className="grid h-7 w-7 place-items-center rounded border border-acero-300 font-bold hover:border-carbon-900"
                         aria-label="Sumar stock"
                       >
@@ -208,7 +237,7 @@ export default function ProductsExcelTable() {
                   <td className="px-3 py-2">
                     <select
                       value={product.saleMode}
-                      onChange={(event) => commit(product.id, { saleMode: event.target.value as SaleMode })}
+                      onChange={(event) => void commit(product.id, { saleMode: event.target.value as SaleMode })}
                       className="rounded border border-acero-300 px-2 py-1 text-xs outline-none focus:border-competicion-500"
                     >
                       <option value="DIRECT">Compra Directa</option>
@@ -219,7 +248,7 @@ export default function ProductsExcelTable() {
                     <input
                       type="checkbox"
                       checked={product.isActive ?? true}
-                      onChange={(event) => commit(product.id, { isActive: event.target.checked })}
+                      onChange={(event) => void commit(product.id, { isActive: event.target.checked })}
                       className="h-5 w-5 accent-competicion-500"
                       aria-label={`Visible en tienda: ${product.name}`}
                     />
@@ -253,14 +282,16 @@ export default function ProductsExcelTable() {
         <ProductFormModal
           product={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
-          onSave={(saved) => {
+          onSave={(saved, saveWarnings) => {
+            setWarnings(saveWarnings);
             if (editing === 'new') {
-              const newId = Math.max(0, ...products.map((entry) => entry.id)) + 1;
-              setProducts((previous) => [{ ...saved, id: newId, isActive: saved.isActive ?? true }, ...previous]);
+              setProducts((previous) => [saved, ...previous]);
             } else {
-              setProducts((previous) => previous.map((entry) => (entry.id === saved.id ? { ...entry, ...saved } : entry)));
+              setProducts((previous) =>
+                previous.map((entry) => (entry.id === saved.id ? { ...entry, ...saved } : entry)),
+              );
             }
-            void saveAdminProduct(saved);
+            flashSaved(saved.id);
             setEditing(null);
           }}
         />

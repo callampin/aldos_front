@@ -9,7 +9,7 @@ import {
   type RowChange,
   type RowError,
 } from '../../lib/excel-helper';
-import { batchImportProducts, slugify } from '../../lib/admin-products';
+import { batchImportProducts, getAdminProducts } from '../../lib/admin-products';
 
 interface Props {
   products: Product[];
@@ -29,6 +29,7 @@ export default function ExcelBatchModal({ products, onClose, onApplied }: Props)
   const [errors, setErrors] = useState<RowError[]>([]);
   const [fileName, setFileName] = useState('');
   const [reading, setReading] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,58 +60,33 @@ export default function ExcelBatchModal({ products, onClose, onApplied }: Props)
     }
   }
 
-  function apply() {
+  async function apply() {
     if (actionable.length === 0) {
       setApplyError('No hay cambios para aplicar.');
       return;
     }
 
-    const result: Product[] = products.map((product) => ({ ...product, compatibility: product.compatibility ?? [] }));
-    const bySku = new Map(result.map((product) => [product.sku, product]));
-    let nextId = Math.max(0, ...products.map((product) => product.id)) + 1;
+    setApplying(true);
+    setApplyError(null);
 
-    for (const change of actionable) {
-      const row = change.row;
-      const compatibility = row.compatibility.map((entry) => {
-        const [brand, ...rest] = entry.split(':');
-        return { brand: (brand ?? '').trim(), model: rest.join(':').trim() };
-      });
-      const existing = bySku.get(row.sku);
-      if (existing) {
-        Object.assign(existing, {
-          name: row.name,
-          category: row.category,
-          priceClp: row.priceClp,
-          stock: row.stock,
-          saleMode: row.saleMode,
-          oemPartNumber: row.oemPartNumber,
-          isActive: row.isActive,
-          compatibility,
-        });
-      } else {
-        const created: Product = {
-          id: nextId++,
-          sku: row.sku,
-          name: row.name,
-          slug: slugify(row.name),
-          priceClp: row.priceClp,
-          stock: row.stock,
-          lowStockThreshold: 1,
-          saleMode: row.saleMode,
-          condition: 'NEW',
-          category: row.category,
-          oemPartNumber: row.oemPartNumber,
-          isActive: row.isActive,
-          compatibility,
-        };
-        result.push(created);
-        bySku.set(row.sku, created);
+    try {
+      const report = await batchImportProducts(actionable.map((change) => change.row));
+      if (report.errors && report.errors.length > 0) {
+        setErrors(report.errors);
       }
-    }
 
-    void batchImportProducts(actionable.map((change) => change.row));
-    onApplied(result);
-    onClose();
+      const fresh = await getAdminProducts();
+      onApplied(fresh.products);
+      onClose();
+    } catch (caught) {
+      setApplyError(
+        caught instanceof Error
+          ? caught.message
+          : 'No pudimos guardar el lote en la base de datos.',
+      );
+    } finally {
+      setApplying(false);
+    }
   }
 
   return (
@@ -193,7 +169,7 @@ export default function ExcelBatchModal({ products, onClose, onApplied }: Props)
                   type="file"
                   accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   className="hidden"
-                  onChange={(event) => handleFile(event.target.files?.[0])}
+                  onChange={(event) => void handleFile(event.target.files?.[0])}
                 />
               </label>
               <button type="button" onClick={() => setStep(1)} className="text-sm font-medium text-acero-500 underline">
@@ -273,20 +249,21 @@ export default function ExcelBatchModal({ products, onClose, onApplied }: Props)
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={apply}
-                  disabled={actionable.length === 0}
+                  onClick={() => void apply()}
+                  disabled={actionable.length === 0 || applying}
                   className="rounded-lg bg-competicion-500 px-5 py-3 text-sm font-bold text-white hover:bg-competicion-600 disabled:opacity-50"
                 >
-                  Confirmar y aplicar cambios
+                  {applying ? 'Aplicando cambios…' : 'Confirmar y aplicar cambios'}
                 </button>
                 <button
                   type="button"
+                  disabled={applying}
                   onClick={() => {
                     setStep(2);
                     setChanges([]);
                     setErrors([]);
                   }}
-                  className="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900"
+                  className="rounded-lg border border-acero-300 px-5 py-3 text-sm font-semibold hover:border-carbon-900 disabled:opacity-50"
                 >
                   Elegir otro archivo
                 </button>

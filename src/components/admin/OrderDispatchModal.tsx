@@ -1,17 +1,39 @@
 import { useEffect, useState } from 'react';
-import type { AdminOrder } from '../../lib/admin';
+import { getAdminOrderDetail, type AdminOrder, type DispatchLabelData } from '../../lib/admin';
 import { STORE_CONFIG } from '../../lib/store-config';
 
 interface Props {
   order: AdminOrder;
   mode: 'label' | 'dispatch';
+  submitting?: boolean;
   onClose: () => void;
   onDispatch: (courierName: string, courierTrackingNumber: string) => void;
 }
 
-export default function OrderDispatchModal({ order, mode, onClose, onDispatch }: Props) {
+export default function OrderDispatchModal({
+  order,
+  mode,
+  submitting = false,
+  onClose,
+  onDispatch,
+}: Props) {
   const [courier, setCourier] = useState(order.courierName ?? '');
   const [tracking, setTracking] = useState(order.courierTrackingNumber ?? '');
+  const [label, setLabel] = useState<DispatchLabelData | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getAdminOrderDetail(order.id)
+      .then((detail) => {
+        if (active && detail?.dispatchLabel) setLabel(detail.dispatchLabel);
+      })
+      .catch(() => {
+        /* Si falla la consulta de detalle, usa los datos ya presentes en `order`. */
+      });
+    return () => {
+      active = false;
+    };
+  }, [order.id]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -22,6 +44,8 @@ export default function OrderDispatchModal({ order, mode, onClose, onDispatch }:
   }, [onClose]);
 
   const totalUnits = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const storeName = label?.from.storeName ?? STORE_CONFIG.storeName;
+  const storeContact = label?.from.whatsapp || STORE_CONFIG.storeEmail;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-carbon-950/60 p-4 print:bg-white print:p-0">
@@ -49,13 +73,14 @@ export default function OrderDispatchModal({ order, mode, onClose, onDispatch }:
               <p className="text-xs font-bold uppercase tracking-wide">Remitente</p>
               <p className="font-mono text-sm font-bold">{order.orderNumber}</p>
             </div>
-            <p className="mt-2 text-sm font-bold">{STORE_CONFIG.storeName}</p>
-            <p className="text-xs text-acero-600">{STORE_CONFIG.storeEmail} · Chile</p>
+            <p className="mt-2 text-sm font-bold">{storeName}</p>
+            <p className="text-xs text-acero-600">{storeContact} · Chile</p>
 
             <div className="mt-4 border-b border-carbon-900 pb-2">
               <p className="text-xs font-bold uppercase tracking-wide">Destinatario</p>
             </div>
             <p className="mt-2 text-base font-bold">{order.customerName}</p>
+            {order.customerRut && <p className="text-xs text-acero-600">RUT: {order.customerRut}</p>}
             <p className="text-sm">{order.addressLine}</p>
             {order.addressReference && <p className="text-xs text-acero-600">Ref: {order.addressReference}</p>}
             <p className="text-sm">
@@ -95,17 +120,17 @@ export default function OrderDispatchModal({ order, mode, onClose, onDispatch }:
           ) : (
             <div className="mt-4 space-y-3 print:hidden">
               <label className="block text-sm font-semibold text-carbon-900">
-                Courier
+                Courier *
                 <input
                   type="text"
                   value={courier}
                   onChange={(event) => setCourier(event.target.value)}
-                  placeholder="Ej. Chilexpress, Starken…"
+                  placeholder="Ej. Chilexpress, Starken, Blue Express…"
                   className="mt-1 w-full rounded-lg border border-acero-300 px-3 py-2.5 text-sm outline-none focus:border-competicion-500"
                 />
               </label>
               <label className="block text-sm font-semibold text-carbon-900">
-                N° de seguimiento del courier
+                N° de seguimiento del courier (opcional)
                 <input
                   type="text"
                   value={tracking}
@@ -117,11 +142,11 @@ export default function OrderDispatchModal({ order, mode, onClose, onDispatch }:
               <div className="flex gap-2">
                 <button
                   type="button"
-                  disabled={!courier.trim() || !tracking.trim()}
+                  disabled={!courier.trim() || submitting}
                   onClick={() => onDispatch(courier.trim(), tracking.trim())}
                   className="flex-1 rounded-lg bg-competicion-500 px-5 py-3 text-sm font-bold text-white hover:bg-competicion-600 disabled:opacity-50"
                 >
-                  Marcar como despachado
+                  {submitting ? 'Guardando…' : 'Marcar como despachado'}
                 </button>
                 <button
                   type="button"

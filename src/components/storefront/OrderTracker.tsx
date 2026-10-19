@@ -11,45 +11,9 @@ interface Props {
   initialCode?: string;
 }
 
-interface LocalSnapshot {
-  orderNumber: string;
-  trackingCode: string;
-  paymentMethod: string;
-  items: Array<{ name: string; sku: string; quantity: number; priceClp: number }>;
-  totalClp: number;
-  customerName?: string;
-  regionName?: string;
-  comuna?: string;
-}
-
-function readLocalOrder(code: string): OrderTracking | null {
-  try {
-    const raw = sessionStorage.getItem('aldos:lastOrder');
-    if (!raw) return null;
-    const snapshot = JSON.parse(raw) as LocalSnapshot;
-    if (snapshot.trackingCode !== code) return null;
-    const now = new Date().toISOString();
-    const isTransfer = snapshot.paymentMethod === 'BANK_TRANSFER';
-    return {
-      orderNumber: snapshot.orderNumber,
-      status: isTransfer ? 'PENDING' : 'PAID',
-      customerName: snapshot.customerName,
-      regionName: snapshot.regionName,
-      comuna: snapshot.comuna,
-      totalClp: snapshot.totalClp,
-      createdAt: now,
-      paidAt: isTransfer ? null : now,
-      items: snapshot.items.map((item) => ({ sku: item.sku, name: item.name, quantity: item.quantity })),
-    };
-  } catch {
-    return null;
-  }
-}
-
 export default function OrderTracker({ initialCode = '' }: Props) {
   const [code, setCode] = useState(initialCode);
   const [order, setOrder] = useState<OrderTracking | null>(null);
-  const [isLocal, setIsLocal] = useState(false);
   const [state, setState] = useState<'idle' | 'loading' | 'found' | 'notfound'>('idle');
 
   async function search(raw: string) {
@@ -57,7 +21,6 @@ export default function OrderTracker({ initialCode = '' }: Props) {
     if (!value) return;
     setState('loading');
     setOrder(null);
-    setIsLocal(false);
     try {
       const data = await getOrderTracking(value);
       if (data) {
@@ -65,23 +28,9 @@ export default function OrderTracker({ initialCode = '' }: Props) {
         setState('found');
         return;
       }
-      const local = readLocalOrder(value);
-      if (local) {
-        setOrder(local);
-        setIsLocal(true);
-        setState('found');
-        return;
-      }
       setState('notfound');
     } catch {
-      const local = readLocalOrder(value);
-      if (local) {
-        setOrder(local);
-        setIsLocal(true);
-        setState('found');
-      } else {
-        setState('notfound');
-      }
+      setState('notfound');
     }
   }
 
@@ -134,12 +83,6 @@ export default function OrderTracker({ initialCode = '' }: Props) {
               {STATUS_LABEL[order.status]}
             </span>
           </div>
-
-          {isLocal && (
-            <p className="mt-3 rounded-lg bg-stock-low/10 px-3 py-2 text-xs font-medium text-stock-low">
-              Pedido de prueba local (el backend no está conectado).
-            </p>
-          )}
 
           {order.status === 'CANCELLED' ? (
             <p className="mt-4 rounded-lg bg-stock-out/10 px-4 py-3 text-sm text-stock-out">

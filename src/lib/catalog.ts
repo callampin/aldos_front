@@ -9,7 +9,7 @@ import { SEED_PRODUCTS } from './catalog-seed';
 
 export type SaleMode = 'DIRECT' | 'WHATSAPP_ONLY';
 export type ProductCondition = 'NEW' | 'USED';
-export type ProductLine = 'XR_CLASSIC' | 'ENDURO' | 'MULTI';
+export type ProductLine = 'XR_CLASSIC' | 'ENDURO' | 'CROSS' | 'MULTI';
 
 export interface ProductCompatibility {
   brand: string;

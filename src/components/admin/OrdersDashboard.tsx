@@ -29,17 +29,23 @@ const STATUS_BADGE: Record<AdminOrderStatus, { text: string; className: string }
 export default function OrdersDashboard() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState<'api' | 'mock'>('mock');
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
   const [tab, setTab] = useState<TabKey>('PAID');
   const [labelOrder, setLabelOrder] = useState<AdminOrder | null>(null);
   const [dispatchOrder, setDispatchOrder] = useState<AdminOrder | null>(null);
 
   useEffect(() => {
-    getAdminOrders().then((result) => {
-      setOrders(result.orders);
-      setSource(result.source);
-      setLoading(false);
-    });
+    getAdminOrders()
+      .then((result) => {
+        setOrders(result.orders);
+        setLoading(false);
+      })
+      .catch((caught) => {
+        setError(caught instanceof Error ? caught.message : 'No pudimos cargar los pedidos.');
+        setLoading(false);
+      });
   }, []);
 
   const grouped = useMemo(
@@ -52,33 +58,42 @@ export default function OrdersDashboard() {
     [orders],
   );
 
-  function updateOrder(id: number, changes: Partial<AdminOrder>) {
-    setOrders((previous) => previous.map((order) => (order.id === id ? { ...order, ...changes } : order)));
+  function flashNotice(message: string) {
+    setNotice(message);
+    window.setTimeout(() => setNotice((current) => (current === message ? null : current)), 4000);
   }
 
-  function markPaid(order: AdminOrder) {
-    updateOrder(order.id, { status: 'PAID', paymentStatus: 'PAID', paidAt: new Date().toISOString() });
-    void patchOrderStatus(order.id, 'PAID');
+  async function applyStatusChange(
+    order: AdminOrder,
+    status: AdminOrderStatus,
+    extra?: { courierName?: string; courierTrackingNumber?: string },
+  ) {
+    setBusyId(order.id);
+    setError(null);
+    try {
+      const result = await patchOrderStatus(order.id, status, extra);
+      setOrders((previous) =>
+        previous.map((entry) => (entry.id === order.id ? { ...entry, ...result.order } : entry)),
+      );
+      flashNotice(result.message);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : 'No pudimos actualizar el estado del pedido.',
+      );
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  function markDelivered(order: AdminOrder) {
-    updateOrder(order.id, { status: 'DELIVERED', deliveredAt: new Date().toISOString() });
-    void patchOrderStatus(order.id, 'DELIVERED');
-  }
-
-  function cancelOrder(order: AdminOrder) {
-    updateOrder(order.id, { status: 'CANCELLED' });
-    void patchOrderStatus(order.id, 'CANCELLED');
-  }
-
-  function confirmDispatch(order: AdminOrder, courierName: string, courierTrackingNumber: string) {
-    updateOrder(order.id, {
-      status: 'SHIPPED',
+  async function confirmDispatch(
+    order: AdminOrder,
+    courierName: string,
+    courierTrackingNumber: string,
+  ) {
+    await applyStatusChange(order, 'SHIPPED', {
       courierName,
-      courierTrackingNumber,
-      shippedAt: new Date().toISOString(),
+      ...(courierTrackingNumber ? { courierTrackingNumber } : {}),
     });
-    void patchOrderStatus(order.id, 'SHIPPED', { courierName, courierTrackingNumber });
     setDispatchOrder(null);
   }
 
@@ -86,9 +101,14 @@ export default function OrdersDashboard() {
 
   return (
     <div>
-      {source === 'mock' && (
-        <p className="mb-4 rounded-lg bg-stock-low/10 px-3 py-2 text-xs font-medium text-stock-low">
-          MODO DEMO: pedidos de ejemplo (el backend aún no está conectado).
+      {error && (
+        <p className="mb-4 rounded-lg bg-stock-out/10 px-3 py-2 text-xs font-medium text-stock-out">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p className="mb-4 rounded-lg bg-stock-ok/10 px-3 py-2 text-xs font-semibold text-stock-ok">
+          {notice}
         </p>
       )}
 
@@ -130,6 +150,7 @@ export default function OrdersDashboard() {
         <ul className="mt-4 space-y-3">
           {activeOrders.map((order) => {
             const badge = STATUS_BADGE[order.status];
+            const isBusy = busyId === order.id;
             return (
               <li key={order.id} className="rounded-xl border border-acero-200 bg-white p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -155,10 +176,22 @@ export default function OrdersDashboard() {
                   </p>
                   {order.courierName && (
                     <p className="text-acero-600 sm:text-right">
-                      {order.courierName} · <span className="font-mono">{order.courierTrackingNumber}</span>
+                      {order.courierName}
+                      {order.courierTrackingNumber && (
+                        <>
+                          {' · '}
+                          <span className="font-mono">{order.courierTrackingNumber}</span>
+                        </>
+                      )}
                     </p>
                   )}
                 </div>
+
+                {order.notes && (
+                  <p className="mt-2 rounded bg-acero-200/50 px-2.5 py-1.5 text-xs text-acero-600">
+                    Nota del cliente: {order.notes}
+                  </p>
+                )}
 
                 <ul className="mt-2 border-t border-acero-200 pt-2 text-xs text-acero-600">
                   {order.items.map((item) => (
@@ -172,8 +205,9 @@ export default function OrdersDashboard() {
                   {order.status === 'PENDING' && (
                     <button
                       type="button"
-                      onClick={() => markPaid(order)}
-                      className="rounded-lg bg-stock-ok px-4 py-2 text-sm font-bold text-white hover:brightness-95"
+                      disabled={isBusy}
+                      onClick={() => void applyStatusChange(order, 'PAID')}
+                      className="rounded-lg bg-stock-ok px-4 py-2 text-sm font-bold text-white hover:brightness-95 disabled:opacity-50"
                     >
                       Marcar pago recibido
                     </button>
@@ -183,8 +217,9 @@ export default function OrdersDashboard() {
                     <>
                       <button
                         type="button"
+                        disabled={isBusy}
                         onClick={() => setDispatchOrder(order)}
-                        className="rounded-lg bg-competicion-500 px-4 py-2 text-sm font-bold text-white hover:bg-competicion-600"
+                        className="rounded-lg bg-competicion-500 px-4 py-2 text-sm font-bold text-white hover:bg-competicion-600 disabled:opacity-50"
                       >
                         Marcar como despachado
                       </button>
@@ -216,8 +251,9 @@ export default function OrdersDashboard() {
                       </a>
                       <button
                         type="button"
-                        onClick={() => markDelivered(order)}
-                        className="rounded-lg border border-acero-300 px-4 py-2 text-sm font-semibold hover:border-carbon-900"
+                        disabled={isBusy}
+                        onClick={() => void applyStatusChange(order, 'DELIVERED')}
+                        className="rounded-lg border border-acero-300 px-4 py-2 text-sm font-semibold hover:border-carbon-900 disabled:opacity-50"
                       >
                         Marcar entregado
                       </button>
@@ -227,8 +263,9 @@ export default function OrdersDashboard() {
                   {(order.status === 'PENDING' || order.status === 'PAID') && (
                     <button
                       type="button"
-                      onClick={() => cancelOrder(order)}
-                      className="rounded-lg px-4 py-2 text-sm font-semibold text-acero-500 underline hover:text-stock-out"
+                      disabled={isBusy}
+                      onClick={() => void applyStatusChange(order, 'CANCELLED')}
+                      className="rounded-lg px-4 py-2 text-sm font-semibold text-acero-500 underline hover:text-stock-out disabled:opacity-50"
                     >
                       Cancelar
                     </button>
@@ -252,9 +289,10 @@ export default function OrdersDashboard() {
         <OrderDispatchModal
           order={dispatchOrder}
           mode="dispatch"
+          submitting={busyId === dispatchOrder.id}
           onClose={() => setDispatchOrder(null)}
           onDispatch={(courierName, courierTrackingNumber) =>
-            confirmDispatch(dispatchOrder, courierName, courierTrackingNumber)
+            void confirmDispatch(dispatchOrder, courierName, courierTrackingNumber)
           }
         />
       )}

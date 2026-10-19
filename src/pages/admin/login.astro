@@ -19,17 +19,12 @@ const storeName = import.meta.env.PUBLIC_STORE_NAME || 'Aldos Motos';
       <div class="text-center">
         <span class="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-competicion-500 text-2xl">🏍️</span>
         <h1 class="mt-3 text-xl font-extrabold">Panel {storeName}</h1>
-        <p class="mt-1 text-sm text-acero-500">Acceso para administración</p>
+        <p class="mt-1 text-sm text-acero-500">Acceso exclusivo de administración</p>
       </div>
 
       <div class="mt-6">
         <AdminLogin client:load />
       </div>
-
-      <p class="mt-4 rounded-lg bg-stock-low/10 px-3 py-2 text-[11px] leading-relaxed text-stock-low">
-        MODO DEMO: sin backend, entra con cualquier correo válido y una contraseña de 4+ caracteres.
-        Debe reemplazarse por el login real (ver <span class="font-mono">NOTAS.md</span>).
-      </p>
     </div>
   </body>
 </html>

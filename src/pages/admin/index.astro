@@ -2,7 +2,8 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getDashboardStats } from '../../lib/admin';
 
-const { stats, source } = await getDashboardStats();
+const cookieHeader = Astro.request.headers.get('cookie');
+const { stats, source } = await getDashboardStats({ cookieHeader });
 
 const cards = [
   { label: 'Para despachar hoy', value: stats.toDispatchToday, emoji: '🟢', href: '/admin/pedidos' },
@@ -14,9 +15,9 @@ const cards = [
 ---
 
 <AdminLayout title="Resumen del día" subtitle="Lo que necesita tu atención ahora.">
-  {source === 'mock' && (
-    <p class="mb-4 rounded-lg bg-stock-low/10 px-3 py-2 text-xs font-medium text-stock-low">
-      MODO DEMO: indicadores con pedidos de ejemplo (el backend aún no está conectado).
+  {source === 'offline' && (
+    <p class="mb-4 rounded-lg bg-stock-out/10 px-3 py-2 text-xs font-medium text-stock-out">
+      No pudimos conectar con el servidor para cargar los indicadores en tiempo real. Verifica que el backend esté en línea.
     </p>
   )}
 

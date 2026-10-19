@@ -1,13 +1,15 @@
 /**
- * Capa de datos del panel de administración (Etapa 4).
+ * Capa de datos del panel de administración de Estrella (`/api/v1/admin/*`).
  *
- * MODO DEMO: si el backend no responde, usa pedidos de ejemplo locales.
- * Ver `NOTAS.md` — el login, la sesión y estos datos deben reemplazarse por
- * el Worker API (`/api/v1/admin/*`) antes de desplegar.
+ * Todas las llamadas usan la cookie `HttpOnly` de sesión (`credentials: 'include'`).
  */
 
 import { ApiError, api } from './api-client';
-import { SEED_PRODUCTS } from './catalog-seed';
+import type { Product } from './catalog';
+import type { ShippingRate } from './shipping';
+import type { AdminSession } from '../stores/auth.store';
+
+export type { AdminSession };
 
 export type AdminOrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 export type AdminPaymentMethod = 'KHIPU' | 'BANK_TRANSFER';
@@ -28,6 +30,7 @@ export interface AdminOrder {
   customerPhone: string;
   customerEmail: string;
   customerRut?: string | null;
+  deliveryMethod?: 'SHIPPING' | 'PICKUP';
   regionName: string;
   comuna: string;
   addressLine: string;
@@ -48,10 +51,28 @@ export interface AdminOrder {
   deliveredAt?: string | null;
 }
 
-export interface AdminSession {
-  email: string;
-  name: string;
-  token: string;
+export interface DispatchLabelData {
+  from: {
+    storeName: string;
+    whatsapp: string;
+    email: string;
+  };
+  to: {
+    name: string;
+    rut: string | null;
+    phone: string;
+    addressLine: string;
+    addressReference: string | null;
+    comuna: string;
+    regionName: string;
+    deliveryMethod: 'SHIPPING' | 'PICKUP';
+  };
+  order: {
+    orderNumber: string;
+    trackingCode: string;
+    purchasedAt: string;
+    items: AdminOrderItem[];
+  };
 }
 
 export interface DashboardStats {
@@ -62,213 +83,182 @@ export interface DashboardStats {
   outOfStock: number;
 }
 
-const TODAY = new Date().toISOString().slice(0, 10);
+export interface OrderStatusUpdateResult {
+  order: AdminOrder;
+  whatsappUrl?: string | null;
+  stockRestored: number;
+  paymentConfirmed: boolean;
+  message: string;
+}
 
-export const MOCK_ORDERS: AdminOrder[] = [
-  {
-    id: 1,
-    orderNumber: 'ALD-2026-0001',
-    trackingCode: 'ALD-8F3K9P',
-    customerName: 'Juan Pérez',
-    customerPhone: '+56912345678',
-    customerEmail: 'juan@example.cl',
-    customerRut: '12.345.678-5',
-    regionName: 'Metropolitana',
-    comuna: 'Maipú',
-    addressLine: 'Av. Los Pajaritos 1234, casa 5',
-    addressReference: 'Portón negro',
-    paymentMethod: 'KHIPU',
-    paymentStatus: 'PAID',
-    status: 'PAID',
-    subtotalClp: 84980,
-    shippingCostClp: 3990,
-    totalClp: 88970,
-    items: [
-      { sku: 'XR250R-PST-STD', name: 'Kit Pistón Original Honda XR 250R STD', quantity: 1, unitPriceClp: 45990 },
-      { sku: 'XR250-KIT-ARR', name: 'Kit de Arrastre Honda XR 250 Tornado', quantity: 1, unitPriceClp: 38990 },
-    ],
-    createdAt: `${TODAY}T09:12:00`,
-    paidAt: `${TODAY}T09:13:00`,
-  },
-  {
-    id: 2,
-    orderNumber: 'ALD-2026-0002',
-    trackingCode: 'ALD-K2M4QP',
-    customerName: 'María Soto',
-    customerPhone: '+56987654321',
-    customerEmail: 'maria@example.cl',
-    regionName: 'Biobío',
-    comuna: 'Concepción',
-    addressLine: 'Calle O’Higgins 456',
-    paymentMethod: 'BANK_TRANSFER',
-    paymentStatus: 'PENDING',
-    status: 'PENDING',
-    subtotalClp: 19990,
-    shippingCostClp: 5990,
-    totalClp: 25980,
-    items: [{ sku: 'EXC-BRAKE-FR', name: 'Pastillas de Freno Delanteras KTM EXC', quantity: 1, unitPriceClp: 19990 }],
-    createdAt: `${TODAY}T10:05:00`,
-  },
-  {
-    id: 3,
-    orderNumber: 'ALD-2026-0003',
-    trackingCode: 'ALD-P7R2WX',
-    customerName: 'Pedro Rojas',
-    customerPhone: '+56955551234',
-    customerEmail: 'pedro@example.cl',
-    regionName: 'Valparaíso',
-    comuna: 'Viña del Mar',
-    addressLine: 'Av. Libertad 789, depto 12',
-    paymentMethod: 'KHIPU',
-    paymentStatus: 'PAID',
-    status: 'SHIPPED',
-    courierName: 'Chilexpress',
-    courierTrackingNumber: 'CX-99887766',
-    subtotalClp: 15990,
-    shippingCostClp: 4490,
-    totalClp: 20480,
-    items: [{ sku: 'MOTOREX-2T', name: 'Aceite Motorex Cross Power 2T', quantity: 1, unitPriceClp: 15990 }],
-    createdAt: `${TODAY}T08:40:00`,
-    paidAt: `${TODAY}T08:41:00`,
-    shippedAt: `${TODAY}T11:30:00`,
-  },
-  {
-    id: 4,
-    orderNumber: 'ALD-2026-0004',
-    trackingCode: 'ALD-Z9T4HN',
-    customerName: 'Camila Díaz',
-    customerPhone: '+56944443322',
-    customerEmail: 'camila@example.cl',
-    regionName: 'La Araucanía',
-    comuna: 'Temuco',
-    addressLine: 'Calle Prat 321',
-    paymentMethod: 'KHIPU',
-    paymentStatus: 'PAID',
-    status: 'PAID',
-    subtotalClp: 8990,
-    shippingCostClp: 6490,
-    totalClp: 15480,
-    items: [{ sku: 'NGK-IR-UNIV', name: 'Bujía NGK Iridium', quantity: 1, unitPriceClp: 8990 }],
-    createdAt: `${TODAY}T11:50:00`,
-    paidAt: `${TODAY}T11:51:00`,
-  },
-  {
-    id: 5,
-    orderNumber: 'ALD-2026-0005',
-    trackingCode: 'ALD-Q5N8VB',
-    customerName: 'Rodrigo Fuentes',
-    customerPhone: '+56922223333',
-    customerEmail: 'rodrigo@example.cl',
-    regionName: 'Metropolitana',
-    comuna: 'Providencia',
-    addressLine: 'Av. Providencia 1000, of. 302',
-    paymentMethod: 'BANK_TRANSFER',
-    paymentStatus: 'PAID',
-    status: 'DELIVERED',
-    courierName: 'Starken',
-    courierTrackingNumber: 'ST-11223344',
-    subtotalClp: 54990,
-    shippingCostClp: 3990,
-    totalClp: 58980,
-    items: [{ sku: 'XR250-CLUTCH', name: 'Kit de Embrague Honda XR 250 Tornado', quantity: 1, unitPriceClp: 54990 }],
-    createdAt: `${TODAY}T07:20:00`,
-    paidAt: `${TODAY}T07:35:00`,
-    shippedAt: `${TODAY}T09:00:00`,
-    deliveredAt: `${TODAY}T15:10:00`,
-  },
-  {
-    id: 6,
-    orderNumber: 'ALD-2026-0006',
-    trackingCode: 'ALD-A1B2C3',
-    customerName: 'Sofía Muñoz',
-    customerPhone: '+56911112222',
-    customerEmail: 'sofia@example.cl',
-    regionName: 'Los Lagos',
-    comuna: 'Puerto Montt',
-    addressLine: 'Calle Urmeneta 55',
-    paymentMethod: 'KHIPU',
-    paymentStatus: 'PAID',
-    status: 'PAID',
-    subtotalClp: 27990,
-    shippingCostClp: 7490,
-    totalClp: 35480,
-    items: [{ sku: 'CHAIN-520-XRING', name: 'Cadena 520 X-Ring Reforzada', quantity: 1, unitPriceClp: 27990 }],
-    createdAt: `${TODAY}T12:15:00`,
-    paidAt: `${TODAY}T12:16:00`,
-  },
-];
+export interface AdminSettingsResponse {
+  settings: Record<string, string>;
+  shippingRates: ShippingRate[];
+}
 
-/** Inicia sesión. Sin backend devuelve una sesión demo (ver NOTAS.md). */
+/** Inicia sesión contra el Worker API (`POST /api/v1/admin/auth/login`). */
 export async function adminLogin(email: string, password: string): Promise<AdminSession> {
+  const res = await api.post<AdminSession>('/admin/auth/login', { email, password });
+  return res.data;
+}
+
+/** Cierra la sesión actual en el Worker API (`POST /api/v1/admin/auth/logout`). */
+export async function adminLogout(): Promise<void> {
   try {
-    const res = await api.post<AdminSession>('/admin/auth/login', { email, password });
-    return res.data;
+    await api.post('/admin/auth/logout');
+  } catch {
+    /* Incluso si la red falla al cerrar, se limpia la sesión local. */
+  }
+}
+
+/** Verifica si existe sesión activa (`GET /api/v1/admin/auth/me`). */
+export async function adminGetMe(): Promise<AdminSession | null> {
+  try {
+    const res = await api.get<{ admin: { id: number; email: string; name: string }; expiresAt: number }>(
+      '/admin/auth/me',
+    );
+    if (!res.data?.admin) return null;
+    return {
+      id: res.data.admin.id,
+      email: res.data.admin.email,
+      name: res.data.admin.name,
+      expiresAt: res.data.expiresAt,
+    };
   } catch (error) {
-    if (error instanceof ApiError) throw error;
-    return { email, name: email.split('@')[0] || 'Estrella', token: 'demo-session' };
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      return null;
+    }
+    throw error;
   }
 }
 
-/** Recuperación de contraseña (demo). */
-export async function adminForgotPassword(email: string): Promise<void> {
-  try {
-    await api.post('/admin/auth/forgot-password', { email });
-  } catch {
-    /* Sin backend: se simula el envío. */
-  }
+/** Solicita enlace de recuperación de contraseña (`POST /api/v1/admin/auth/forgot-password`). */
+export async function adminForgotPassword(email: string): Promise<string> {
+  const res = await api.post<{ message: string }>('/admin/auth/forgot-password', { email });
+  return (
+    res.data?.message ??
+    'Si el correo está registrado, te enviamos instrucciones para recuperar tu contraseña.'
+  );
 }
 
-/** Pedidos del panel. Sin backend devuelve los de ejemplo. */
-export async function getAdminOrders(): Promise<{ orders: AdminOrder[]; source: 'api' | 'mock' }> {
-  try {
-    const res = await api.get<AdminOrder[]>('/admin/orders', { signal: AbortSignal.timeout(2500) });
-    if (Array.isArray(res.data)) return { orders: res.data, source: 'api' };
-  } catch {
-    /* Sin backend: datos de ejemplo. */
-  }
-  return { orders: MOCK_ORDERS, source: 'mock' };
+/** Restablece la contraseña con el token recibido por correo (`POST /api/v1/admin/auth/reset-password`). */
+export async function adminResetPassword(token: string, password: string): Promise<string> {
+  const res = await api.post<{ message: string }>('/admin/auth/reset-password', { token, password });
+  return res.data?.message ?? 'Tu contraseña quedó actualizada. Ya puedes ingresar.';
 }
 
-/** Cambia el estado de un pedido (best-effort hacia la API). */
+/** Lista los pedidos del panel (`GET /api/v1/admin/orders`). */
+export async function getAdminOrders(options?: {
+  cookieHeader?: string | null;
+}): Promise<{ orders: AdminOrder[]; source: 'api' }> {
+  const headers: Record<string, string> = {};
+  if (options?.cookieHeader) headers['Cookie'] = options.cookieHeader;
+
+  const res = await api.get<AdminOrder[]>('/admin/orders', {
+    headers,
+    signal: AbortSignal.timeout(5000),
+  });
+  return { orders: Array.isArray(res.data) ? res.data : [], source: 'api' };
+}
+
+/** Obtiene el detalle de un pedido con etiqueta de despacho y link de WhatsApp (`GET /api/v1/admin/orders/:id`). */
+export async function getAdminOrderDetail(
+  orderId: number,
+): Promise<{ order: AdminOrder; whatsappUrl: string; dispatchLabel: DispatchLabelData }> {
+  const res = await api.get<{ order: AdminOrder; whatsappUrl: string; dispatchLabel: DispatchLabelData }>(
+    `/admin/orders/${orderId}`,
+  );
+  return res.data;
+}
+
+/** Cambia el estado de un pedido (`PATCH /api/v1/admin/orders/:id/status`). */
 export async function patchOrderStatus(
   orderId: number,
   status: AdminOrderStatus,
   extra?: { courierName?: string; courierTrackingNumber?: string },
-): Promise<void> {
+): Promise<OrderStatusUpdateResult> {
+  const res = await api.patch<OrderStatusUpdateResult>(`/admin/orders/${orderId}/status`, {
+    status,
+    ...extra,
+  });
+  return res.data;
+}
+
+/** Indicadores reales del día para el resumen del panel (`/admin`). */
+export async function getDashboardStats(options?: {
+  cookieHeader?: string | null;
+}): Promise<{ stats: DashboardStats; source: 'api' | 'offline' }> {
+  const headers: Record<string, string> = {};
+  if (options?.cookieHeader) headers['Cookie'] = options.cookieHeader;
+
   try {
-    await api.patch(`/admin/orders/${orderId}/status`, { status, ...extra });
+    const [ordersRes, productsRes] = await Promise.all([
+      api.get<AdminOrder[]>('/admin/orders', { headers, signal: AbortSignal.timeout(4000) }),
+      api.get<Product[]>('/admin/products', { headers, signal: AbortSignal.timeout(4000) }),
+    ]);
+
+    const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+    const products = Array.isArray(productsRes.data) ? productsRes.data : [];
+
+    const lowStock = products.filter(
+      (product) => product.stock > 0 && product.stock <= (product.lowStockThreshold ?? 1),
+    ).length;
+    const outOfStock = products.filter((product) => product.stock <= 0).length;
+
+    return {
+      stats: {
+        toDispatchToday: orders.filter((order) => order.status === 'PAID').length,
+        pendingPayment: orders.filter((order) => order.status === 'PENDING').length,
+        shippedToday: orders.filter((order) => order.status === 'SHIPPED').length,
+        lowStock,
+        outOfStock,
+      },
+      source: 'api',
+    };
   } catch {
-    /* Sin backend: el cambio queda solo en memoria del panel. */
+    return {
+      stats: {
+        toDispatchToday: 0,
+        pendingPayment: 0,
+        shippedToday: 0,
+        lowStock: 0,
+        outOfStock: 0,
+      },
+      source: 'offline',
+    };
   }
 }
 
-/** Indicadores del día para el resumen del panel. */
-export async function getDashboardStats(): Promise<{ stats: DashboardStats; source: 'api' | 'mock' }> {
-  let orders = MOCK_ORDERS;
-  let source: 'api' | 'mock' = 'mock';
-  try {
-    const res = await api.get<AdminOrder[]>('/admin/orders', { signal: AbortSignal.timeout(2500) });
-    if (Array.isArray(res.data) && res.data.length > 0) {
-      orders = res.data;
-      source = 'api';
-    }
-  } catch {
-    /* usa mock */
-  }
+/** Lee la configuración de la tienda y las tarifas de envío (`GET /api/v1/admin/settings`). */
+export async function getAdminSettings(): Promise<AdminSettingsResponse> {
+  const res = await api.get<AdminSettingsResponse>('/admin/settings', {
+    signal: AbortSignal.timeout(5000),
+  });
+  return res.data;
+}
 
-  const lowStock = SEED_PRODUCTS.filter(
-    (product) => product.stock > 0 && product.stock <= product.lowStockThreshold,
-  ).length;
-  const outOfStock = SEED_PRODUCTS.filter((product) => product.stock <= 0).length;
+/** Guarda claves de configuración de la tienda (`PUT /api/v1/admin/settings`). */
+export async function saveAdminSettings(
+  settings: Record<string, string | number | boolean>,
+): Promise<Record<string, string>> {
+  const res = await api.put<{ settings: Record<string, string> }>('/admin/settings', { settings });
+  return res.data.settings;
+}
 
-  return {
-    stats: {
-      toDispatchToday: orders.filter((order) => order.status === 'PAID').length,
-      pendingPayment: orders.filter((order) => order.status === 'PENDING').length,
-      shippedToday: orders.filter((order) => order.status === 'SHIPPED').length,
-      lowStock,
-      outOfStock,
-    },
-    source,
-  };
+/** Actualiza el costo o plazo de envío de una región (`PUT /api/v1/admin/settings/shipping-rates/:regionCode`). */
+export async function saveAdminShippingRate(
+  regionCode: string,
+  changes: {
+    baseCostClp?: number;
+    estimatedDays?: string;
+    courierName?: string;
+    isPayableOnDelivery?: boolean;
+    isActive?: boolean;
+  },
+): Promise<ShippingRate> {
+  const res = await api.put<ShippingRate>(
+    `/admin/settings/shipping-rates/${encodeURIComponent(regionCode)}`,
+    changes,
+  );
+  return res.data;
 }

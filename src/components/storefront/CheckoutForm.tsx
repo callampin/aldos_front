@@ -17,6 +17,9 @@ interface CheckoutOrderResponse {
   orderNumber: string;
   trackingCode: string;
   paymentUrl?: string | null;
+  paymentMessage?: string | null;
+  bankTransfer?: Record<string, string | null> | null;
+  subtotalClp?: number;
   totalClp?: number;
   shippingCostClp?: number;
 }
@@ -80,32 +83,21 @@ export default function CheckoutForm() {
     return found;
   }
 
-  function localOrder(): CheckoutOrderResponse {
-    const random = (length: number) => {
-      const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
-    };
-    return {
-      orderNumber: `ALD-${new Date().getFullYear()}-${random(4)}`,
-      trackingCode: `ALD-${random(6)}`,
-      totalClp: total,
-      shippingCostClp: shippingCost,
-    };
-  }
-
   function completeOrder(order: CheckoutOrderResponse) {
     const snapshot = {
       orderNumber: order.orderNumber,
       trackingCode: order.trackingCode,
       paymentMethod: payment,
+      paymentMessage: order.paymentMessage ?? null,
+      bankTransfer: order.bankTransfer ?? null,
       items: items.map((item) => ({
         name: item.name,
         sku: item.sku,
         quantity: item.quantity,
         priceClp: item.priceClp,
       })),
-      subtotalClp: subtotal,
-      shippingCostClp: shippingCost,
+      subtotalClp: order.subtotalClp ?? subtotal,
+      shippingCostClp: order.shippingCostClp ?? shippingCost,
       totalClp: order.totalClp ?? total,
       customerName: name,
       customerEmail: email,
@@ -174,8 +166,9 @@ export default function CheckoutForm() {
       if (error instanceof ApiError) {
         setGeneralError(error.message);
       } else {
-        // Sin backend (modo desarrollo): se simula la orden para probar el flujo.
-        completeOrder(localOrder());
+        setGeneralError(
+          'No pudimos registrar tu pedido en este momento. Verifica tu conexión o escríbenos por WhatsApp.',
+        );
       }
     } finally {
       setSubmitting(false);

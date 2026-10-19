@@ -117,14 +117,20 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   const doFetch = options.fetch ?? fetch;
 
   async function request<T>(method: HttpMethod, path: string, options: RequestOptions = {}): Promise<ApiSuccess<T>> {
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const response = await doFetch(`${baseUrl}${path}${buildQuery(options.query)}`, {
       method,
       headers: {
         Accept: 'application/json',
-        ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.body !== undefined && !isFormData ? { 'Content-Type': 'application/json' } : {}),
         ...options.headers,
       },
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body:
+        options.body === undefined
+          ? undefined
+          : isFormData
+            ? (options.body as FormData)
+            : JSON.stringify(options.body),
       signal: options.signal,
       // `include` para enviar la cookie de sesión del panel admin (cross-origin en dev).
       credentials: options.credentials ?? 'include',

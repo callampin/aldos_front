@@ -1,20 +1,21 @@
 /**
- * Sesión del panel de administración.
+ * Sesión del panel de administración en memoria del navegador.
  *
- * ⚠️ DEMO: la sesión se guarda en `localStorage`, lo que NO es seguro.
- * Debe reemplazarse por la sesión real del backend (cookie HttpOnly + JWT).
- * Ver `NOTAS.md`.
+ * La credencial real viaja únicamente en la cookie `HttpOnly` (`aldos_admin_session`)
+ * emitida por el backend (`/api/v1/admin/auth/login`) y verificada con `/api/v1/admin/auth/me`.
+ * No se guarda ningún token en `localStorage`.
  */
 
-import { persistentJSON } from '@nanostores/persistent';
+import { atom } from 'nanostores';
 
 export interface AdminSession {
+  id?: number;
   email: string;
   name: string;
-  token: string;
+  expiresAt?: number;
 }
 
-export const $session = persistentJSON<AdminSession>('aldos:admin', null);
+export const $session = atom<AdminSession | null>(null);
 
 export function setSession(session: AdminSession): void {
   $session.set(session);

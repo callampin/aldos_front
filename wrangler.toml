@@ -1,0 +1,11 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "aldos-front"
+compatibility_date = "2025-03-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "./dist"
+
+[vars]
+PUBLIC_API_URL = "http://localhost:8787/api/v1"
+PUBLIC_STORE_NAME = "Aldos Motos"
+PUBLIC_STORE_EMAIL = "contacto@aldosmotos.cl"
+PUBLIC_WHATSAPP_NUMBER = "56900000000"

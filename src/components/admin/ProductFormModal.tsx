@@ -1,16 +1,29 @@
 import { useEffect, useState } from 'react';
-import type { Product, ProductCondition, ProductCompatibility, ProductLine, SaleMode } from '../../lib/catalog';
+import type { Product, ProductCondition, ProductCompatibility, SaleMode } from '../../lib/catalog';
 import { CATEGORIES } from '../../lib/catalog';
 import { getMotorcycleCatalog, type MotorcycleBrand } from '../../lib/motorcycles';
-import { slugify } from '../../lib/admin-products';
+import {
+  deleteProductMedia,
+  getProductMedia,
+  saveAdminProduct,
+  slugify,
+  uploadProductMedia,
+  type CompatibilityWarning,
+  type ProductImageItem,
+} from '../../lib/admin-products';
 import { compressImageToWebp, fileToDataUrl } from '../../lib/image-compressor';
 import { formatCLP, parseCLP } from '../../lib/formatters';
+
+interface PendingImage {
+  file: File;
+  previewUrl: string;
+}
 
 interface Props {
   /** `null` = producto nuevo. */
   product: Product | null;
   onClose: () => void;
-  onSave: (product: Product) => void;
+  onSave: (product: Product, warnings: CompatibilityWarning[]) => void;
 }
 
 const inputClass =
@@ -30,8 +43,19 @@ export default function ProductFormModal({ product, onClose, onSave }: Props) {
   const [description, setDescription] = useState(product?.description ?? '');
   const [isUniversal, setIsUniversal] = useState(product?.isUniversal ?? false);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
-  const [images, setImages] = useState<string[]>(product?.images ?? (product?.imageUrl ? [product.imageUrl] : []));
+
+  // Fotos ya subidas en R2 vs fotos comprimidas listas para subir
+  const [savedImages, setSavedImages] = useState<ProductImageItem[]>(
+    (product?.images ?? (product?.imageUrl ? [product.imageUrl] : [])).map((url, idx) => ({
+      id: 0,
+      url,
+      isPrimary: idx === 0,
+      sortOrder: idx,
+    })),
+  );
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [compressing, setCompressing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [catalog, setCatalog] = useState<MotorcycleBrand[]>([]);
   const [selected, setSelected] = useState<Set<string>>(
     new Set((product?.compatibility ?? []).map((entry) => `${entry.brand}||${entry.model}`)),
@@ -49,6 +73,21 @@ export default function ProductFormModal({ product, onClose, onSave }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!product || product.id <= 0) return;
+    let active = true;
+    getProductMedia(product.id)
+      .then((media) => {
+        if (active && media.length > 0) setSavedImages(media);
+      })
+      .catch(() => {
+        /* Mantiene las URLs ya presentes en el producto. */
+      });
+    return () => {
+      active = false;
+    };
+  }, [product]);
+
+  useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') onClose();
     }
@@ -59,17 +98,48 @@ export default function ProductFormModal({ product, onClose, onSave }: Props) {
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setCompressing(true);
-    const added: string[] = [];
-    for (const file of Array.from(files)) {
-      try {
+    setError(null);
+
+    try {
+      for (const file of Array.from(files)) {
         const compressed = await compressImageToWebp(file);
-        added.push(await fileToDataUrl(compressed));
-      } catch {
-        /* archivo no soportado */
+        if (product && product.id > 0) {
+          const uploaded = await uploadProductMedia(product.id, compressed, {
+            altText: name.trim() || product.name,
+            isPrimary: savedImages.length === 0,
+          });
+          setSavedImages((previous) => [...previous, uploaded]);
+        } else {
+          const previewUrl = await fileToDataUrl(compressed);
+          setPendingImages((previous) => [...previous, { file: compressed, previewUrl }]);
+        }
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'No pudimos procesar o subir la foto. Intenta con otra imagen.',
+      );
+    } finally {
+      setCompressing(false);
+    }
+  }
+
+  async function removeSavedImage(item: ProductImageItem, index: number) {
+    setError(null);
+    if (item.id > 0) {
+      try {
+        await deleteProductMedia(item.id);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'No pudimos borrar la foto.');
+        return;
       }
     }
-    setImages((previous) => [...previous, ...added]);
-    setCompressing(false);
+    setSavedImages((previous) => previous.filter((_, idx) => idx !== index));
+  }
+
+  function removePendingImage(index: number) {
+    setPendingImages((previous) => previous.filter((_, idx) => idx !== index));
   }
 
   function toggleCompatibility(brand: string, model: string) {
@@ -82,18 +152,21 @@ export default function ProductFormModal({ product, onClose, onSave }: Props) {
     });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!name.trim() || !sku.trim()) {
       setError('El nombre y el SKU son obligatorios.');
       return;
     }
+    setError(null);
+    setSaving(true);
+
     const category = CATEGORIES.find((entry) => entry.slug === categorySlug);
     const compatibility: ProductCompatibility[] = [...selected].map((key) => {
       const [brand, model] = key.split('||');
       return { brand: brand ?? '', model: model ?? '' };
     });
 
-    onSave({
+    const draft: Product = {
       id: product?.id ?? 0,
       sku: sku.trim(),
       name: name.trim(),
@@ -105,15 +178,44 @@ export default function ProductFormModal({ product, onClose, onSave }: Props) {
       condition,
       category: category?.name,
       categorySlug: category?.slug,
-      line: product?.line as ProductLine | undefined,
       oemPartNumber: oem.trim() || null,
       description: description.trim() || undefined,
-      imageUrl: images[0] ?? null,
-      images,
       isUniversal,
       isActive,
       compatibility,
-    });
+    };
+
+    try {
+      const response = await saveAdminProduct(draft);
+      const savedProduct = response.product ?? { ...draft };
+      const uploadedUrls: string[] = [];
+
+      // Si el repuesto es nuevo y había fotos listas, se suben ahora a R2 con su nuevo ID.
+      if (pendingImages.length > 0 && savedProduct.id > 0) {
+        for (let idx = 0; idx < pendingImages.length; idx += 1) {
+          const pending = pendingImages[idx]!;
+          const uploaded = await uploadProductMedia(savedProduct.id, pending.file, {
+            altText: savedProduct.name,
+            isPrimary: savedImages.length === 0 && idx === 0,
+          });
+          uploadedUrls.push(uploaded.url);
+        }
+      }
+
+      const allUrls = [...savedImages.map((img) => img.url), ...uploadedUrls];
+      onSave(
+        {
+          ...savedProduct,
+          imageUrl: allUrls[0] ?? savedProduct.imageUrl ?? null,
+          images: allUrls.length > 0 ? allUrls : (savedProduct.images ?? []),
+        },
+        response.warnings ?? [],
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No pudimos guardar el repuesto.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -224,24 +326,37 @@ export default function ProductFormModal({ product, onClose, onSave }: Props) {
           <div>
             <p className="text-xs font-semibold text-acero-600">Fotos</p>
             <p className="mt-0.5 text-[11px] text-acero-400">
-              Se comprimen automáticamente a WebP (menos de 300 KB) antes de subirlas.
+              Se comprimen automáticamente a WebP (menos de 300 KB) y se guardan en Cloudflare R2.
             </p>
             <input
               type="file"
               accept="image/*"
               multiple
-              onChange={(event) => handleFiles(event.target.files)}
+              onChange={(event) => void handleFiles(event.target.files)}
               className="mt-2 block w-full text-sm"
             />
-            {compressing && <p className="mt-1 text-xs text-acero-500">Comprimiendo fotos…</p>}
-            {images.length > 0 && (
+            {compressing && <p className="mt-1 text-xs text-acero-500">Comprimiendo y subiendo fotos…</p>}
+            {(savedImages.length > 0 || pendingImages.length > 0) && (
               <ul className="mt-2 flex flex-wrap gap-2">
-                {images.map((image, index) => (
-                  <li key={`${image.slice(0, 24)}-${index}`} className="relative">
-                    <img src={image} alt="" className="h-16 w-16 rounded-lg border border-acero-200 object-cover" />
+                {savedImages.map((image, index) => (
+                  <li key={`saved-${image.id}-${index}`} className="relative">
+                    <img src={image.url} alt="" className="h-16 w-16 rounded-lg border border-acero-200 object-cover" />
                     <button
                       type="button"
-                      onClick={() => setImages((previous) => previous.filter((_, i) => i !== index))}
+                      onClick={() => void removeSavedImage(image, index)}
+                      className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-carbon-900 text-xs text-white"
+                      aria-label="Quitar foto"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+                {pendingImages.map((pending, index) => (
+                  <li key={`pending-${index}`} className="relative">
+                    <img src={pending.previewUrl} alt="" className="h-16 w-16 rounded-lg border border-competicion-500 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePendingImage(index)}
                       className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-carbon-900 text-xs text-white"
                       aria-label="Quitar foto"
                     >
@@ -280,11 +395,21 @@ export default function ProductFormModal({ product, onClose, onSave }: Props) {
         </div>
 
         <footer className="flex justify-end gap-2 border-t border-acero-200 px-4 py-3">
-          <button type="button" onClick={onClose} className="rounded-lg border border-acero-300 px-5 py-2.5 text-sm font-semibold hover:border-carbon-900">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onClose}
+            className="rounded-lg border border-acero-300 px-5 py-2.5 text-sm font-semibold hover:border-carbon-900 disabled:opacity-50"
+          >
             Cancelar
           </button>
-          <button type="button" onClick={handleSave} className="rounded-lg bg-competicion-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-competicion-600">
-            Guardar producto
+          <button
+            type="button"
+            disabled={saving || compressing}
+            onClick={() => void handleSave()}
+            className="rounded-lg bg-competicion-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-competicion-600 disabled:opacity-50"
+          >
+            {saving ? 'Guardando…' : 'Guardar producto'}
           </button>
         </footer>
       </div>
